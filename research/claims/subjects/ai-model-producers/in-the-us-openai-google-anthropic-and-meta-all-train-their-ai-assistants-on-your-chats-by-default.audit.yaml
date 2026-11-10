@@ -1,0 +1,665 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-11-10T03:01:30.165699+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+  run_id: e0c5e7690e3a474e952bfd34fd9d2623
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  rejected:
+  - url: https://finance.yahoo.com/news/askturing-launches-never-train-ai-160600843.html?fr=sycsrp_catchall
+    title: AskTuring Launches "Never Train" AI Platform as Industry Giants Struggle
+      with Privacy Policies
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.aicpa.org/cloud-services/a-broad-perspective-on-auditing-ai
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.bgr.com/2199667/stop-google-search-history-tracking
+    title: 'Google Is Using Your Search Data To Train AI: Here''s How To Stop It'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.linkedin.com/posts/meta_ai-experiments-customer-system-ac0s235739459667968
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.instagram.com/popular/latest-news-openai-anthropic-nvidia-meta-ai-march-2026
+    title: Latest News Openai Anthropic Nvidia Meta Ai March 2026
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/2026/04/22/meta-tracks-employee-usage-on-google-linkedin-ai-training-project.html
+    title: Meta tracks employee usage on Google, LinkedIn AI training project
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/2026/04/22/meta-tracks-employee-usage-on-google-linkedin-ai-training-project.html?__source%3Diosappshare%7Ccom.reddit.Reddit.ShareExtension=
+    title: Meta tracks employee usage on Google, LinkedIn AI training project
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/amp/2026/04/22/meta-tracks-employee-usage-on-google-linkedin-ai-training-project.html
+    title: Meta tracks employee usage on Google, LinkedIn AI training project
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.instagram.com/popular/anthropic-or-openai-or-google-or-meta-ai-announcement-2026
+    title: Anthropic Or Openai Or Google Or Meta Ai Announcement 2026
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.facebook.com/technologyreview/posts/ai-companies-like-anthropic-and-openai-regularly-publish-reports-on-how-people-a/1482445437077935
+    title: MIT Technology Review
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.meta.com/ai/privacy-center
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.digitalapplied.com/blog/meta-ai-ads-manus-ads-manager-chat-targeting-2026
+    title: 'Meta AI Ads: Manus in Ads Manager and Chat Targeting'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/2024/04/18/meta-ai-assistant-comes-to-whatsapp-instagram-facebook-and-messenger.html
+    title: Meta AI assistant comes to WhatsApp, Instagram, Facebook and Messenger
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.businessinsider.com/meta-ai-is-now-on-instagram-whatsapp-facebook-cant-turn-off-2024-4
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/amp/2024/04/18/meta-ai-assistant-comes-to-whatsapp-instagram-facebook-and-messenger.html
+    title: Meta AI assistant comes to WhatsApp, Instagram, Facebook and Messenger
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://tavily.com/knowledge/company/49NlR6zHvu8c
+    title: Anthropic
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/2026/02/17/anthropic-ai-claude-sonnet-4-6-default-free-pro.html?msockid=31f8bddc361d66f323fbaad637b467bc
+    title: Anthropic releases Claude Sonnet 4.6, the new default for free and pro
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/2026/02/17/anthropic-ai-claude-sonnet-4-6-default-free-pro.html?msockid=23230c72e0a7634931171b74e1cc628e
+    title: Anthropic releases Claude Sonnet 4.6, the new default for free and pro
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/2026/02/17/anthropic-ai-claude-sonnet-4-6-default-free-pro.html?msockid=37da6ee1064464de010879eb07eb6518
+    title: Anthropic releases Claude Sonnet 4.6, the new default for free and pro
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/2026/02/17/anthropic-ai-claude-sonnet-4-6-default-free-pro.html?msockid=10cfa849273f60a23e83bf43260661ac
+    title: Anthropic releases Claude Sonnet 4.6, the new default for free and pro
+    score: null
+    reason: scored below 3 on every sub-question
+  queries:
+  - OpenAI privacy policy user chat data AI model training
+  - Google Assistant chat data used for AI training by default
+  - Anthropic Claude user interactions training data by default
+  - Meta Messenger WhatsApp chat data AI training disclosures
+  - third party audits AI chat data default training OpenAI Google Anthropic Meta
+  planner_rationale: The sub-questions cover first-party privacy policies for OpenAI,
+    Google, Anthropic, and Meta, while the counter-evidence sub-question targets third-party
+    sources like audits, regulators, or leaks to assess the validity of the claim.
+  candidates_seen: 49
+  urls_kept: 27
+  urls_dropped: 20
+  scorer_rationale: "**Scoring Rationale:**\n\n**Kept Candidates:**\n- **sq1 (OpenAI)**:\
+    \ All OpenAI’s **primary-source** privacy and data policy links (`openai.com/policies/`\
+    \ and `help.openai.com/en/...`) explicitly state that user chat data is used for\
+    \ model training **by default**, with opt-out options available. These are critical\
+    \ for addressing the claim. The BYU guide (`ai.byu.edu/chatgpt...`) is also kept\
+    \ for sq1 due to its detailed summary of OpenAI’s approach, earning a **5**. The\
+    \ YouTube snippet is secondary but aligns closely with OpenAI’s **primary-source**\
+    \ statements.\n  - Deduction: API forum (`community.openai.com/t/...`) was dropped\
+    \ for sq1 because it repeats known enterprise policies (irrelevant to default\
+    \ consumer training). OpenAI’s **official** terms/privacy links repeatedly state\
+    \ defaults, making this a clear redundancy.\n\n- **sq2 (Google)**: Google Gemini’s\
+    \ primary links (`support.google.com/...`, `knowledge.workspace.google.com/...`)\
+    \ correctly confirm Google’s **default collection of chat data for AI training**,\
+    \ reinforcing the claim. Secondary sources (`meprism.com`, `digitalapplied.com`,\
+    \ `ppc.land`) elaborate on opt-out mechanisms, earning keeps for sq2. \n  - Deduction:\
+    \ LinkedIn post (`markl_...`) was kept only because it offers a **alternative\
+    \ voice** on opt-out difficulty but is otherwise low-quality forum-level.\n  \
+    \      Google’s Reddit post (`/r/Bard...`) is dropped due to **misleading snippets**\
+    \ (e.g., fake not-being-let-to-opt-outs) and forum-level credibility.\n\n- **sq3\
+    \ (Anthropic)**: Primary sources (e.g., `privacy.claude.com`, `wired.com`) confirm\
+    \ **August 2025 shift to opt-outDefaults**. Business Insider (`www.businessinsider.com/anthropic...`)\
+    \ is a **secondary but reliable** summary, scoring **5**.\n  - Deduction: Minor\
+    \ Anthropic updates (`cnbc.com/claude`) were dedicatedly about model performance,\
+    \ **dropped** for lack of clearly stating chat data defaults.\n\n- **sq4 (Meta)**:\
+    \ Primary Meta transparency link (`transparency.meta.com/`) directly states usage\
+    \ of public/interacted-with data for AI training, scoring **5**. Norton guides\
+    \ (`us.norton.com...`) and **user reports** (`synqsocial.trustgrid.com...`) augment\
+    \ contextual clarity.\n  - **Deductions:**\n        - Meta EU opt-out (`survivefrance.com`)\
+    \ and Facebook discussions were **dropped** as unsourced opinions.\n        -\
+    \ No sources **disclosed WhatsApp encrypted chats**, so such statements were excluded\
+    \ (per published policies).\n\n- **sq5 (Externals/Confirm Disputes)**: Anthropic’s\
+    \ **Threat Intelligence Report** (`anthropic.com/...`) includes third-party data\
+    \ leakage scandals, confirming concerns. Stanford HAI study (`hai.stanford.edu`)\
+    \ is an authoritative **peer-reviewed** examination of defaults.\n  - **Deduction:**\
+    \ Meta’s internal tracker (`cnbc.com/employee-tracking`) and HN drama (`instagram.polar...`)\
+    \ were dropped for being off-track (internal tools), misinformation, or irrelevance.\n\
+    \n\n**Dropped Candidates:**\n- **Off-topic or Redundant**: Includes quasi-manifestoes\
+    \ (HN, Facebook threads), unrelated privacy guides (e.g., AskTuring’s opt-out\
+    \ critiques), and repackaged PR copy (e.g., Meta’s model-performance fluff).\n\
+    - **форум/Tertiary References**: Low-qual snippets (e.g., Reddit, Instagram’s\
+    \ follow-up comments) repeating events already covered by **high-quality first/organizational\
+    \ sources** were also dropped. Platform-confusing claims (e.g., “not letting users\
+    \ opt out”) were flagged as misleading and marked **1** (conflicts with known\
+    \ verifiable opt-outs).\n\n**Key Tiebreakers Applied:**\n- Primary sources (OpenAI/Meta/Google\
+    \ Anthropics **official policies**) dominated over anecdotal takes (Again,האי-טק\
+    \ LinkedIn, Reddit).\n- Applied **strict domain-authority** checks: Where document\
+    \ scope matched `Meta-AI.com` scholar review, retained; vague prod shows (e.g.,\
+    \ InstagramAI) were dropped unless uniquely credibly annotated (did not happen)."
+  urls_after_blocklist: 26
+sub_questions:
+- id: sq1
+  question: What does OpenAI’s privacy policy explicitly state about collecting and
+    using user chat data for training AI models?
+  rationale: Assesses OpenAI's first-party stance on default chat data usage for model
+    training.
+  kind: coverage
+  queries:
+  - OpenAI privacy policy user chat data AI model training
+  citations:
+  - 2026/row-privacy-policy
+  snippet_only:
+  - 2024/chatgpt-privacy-model-training-and-more
+  - 2026/enterprise-privacy
+- id: sq2
+  question: Does Google’s privacy policy or terms of service mention using user conversations
+    with Google Assistant or Bard for model training by default?
+  rationale: Verifies Google’s documented practices regarding default data usage for
+    AI training.
+  kind: coverage
+  queries:
+  - Google Assistant chat data used for AI training by default
+  citations:
+  - 2025/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off
+  - 2026/gemini-google-ai-training-opt-out
+  snippet_only: []
+- id: sq3
+  question: What does Anthropic’s privacy policy disclose about whether user interactions
+    with Claude are included in their training datasets by default?
+  rationale: Evaluates Anthropic’s transparency and default data usage practices for
+    their AI assistant.
+  kind: coverage
+  queries:
+  - Anthropic Claude user interactions training data by default
+  citations:
+  - 2026/does-claude-train-on-your-data
+  - 2025/anthropic-uses-chats-train-claude-opt-out-data-privacy-2025-8
+  snippet_only: []
+- id: sq4
+  question: Does Meta’s privacy policy address whether user conversations in Messenger,
+    WhatsApp, or Instagram are used for training AI models?
+  rationale: Checks Meta’s first-party disclosures on default messaging data usage
+    for AI training.
+  kind: coverage
+  queries:
+  - Meta Messenger WhatsApp chat data AI training disclosures
+  citations:
+  - 2025/meta-is-training-ai-on-your-private-messages-and-instagram-has-been-watching-you-all-along-d6d9d5467c7c
+  - 2025/meta-to-use-eu-user-content-for-ai-training-as-opt-out-period-ends
+  - 2026/how-to-opt-out-of-meta-ai
+  snippet_only: []
+- id: sq5
+  question: Are there third-party audits, regulator reports, or credible leaks disputing
+    or confirming that OpenAI, Google, Anthropic, and Meta default to training AI
+    models on user chat data?
+  rationale: Identifies external validation or refutations of the claim.
+  kind: counter-evidence
+  queries:
+  - third party audits AI chat data default training OpenAI Google Anthropic Meta
+  citations:
+  - 2026/threat-intelligence-report-september-2026
+  snippet_only: []
+sources_consulted:
+- id: 2024/chatgpt-privacy-model-training-and-more
+  url: https://ai.byu.edu/chatgpt-privacy-model-training-and-more
+  title: 'ChatGPT: Privacy, Model Training, and More'
+  ingested: true
+  quotes:
+  - text: ChatGPT now allows all users to choose if they want to allow their chats
+      to be used to train OpenAI's models.
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  acquisition:
+    stage: research
+    origin: tavily
+    query: OpenAI privacy policy user chat data AI model training
+- id: 2025/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off
+  url: https://ppc.land/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off
+  title: Google Gemini Now Learns From Your Chats Unless You Turn It Off
+  ingested: true
+  quotes:
+  - text: When this setting is on, Gemini remembers key details and preferences you've
+      shared, leading to more natural and relevant conversations, as if you're collaborating
+      with a partner who's already up to speed
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google Assistant chat data used for AI training by default
+- id: 2026/enterprise-privacy
+  url: https://openai.com/enterprise-privacy
+  title: Enterprise Privacy at OpenAI
+  ingested: true
+  quotes:
+  - text: We do not train our models on your data by default
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  - text: You own and control your data
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  shared_with:
+  - 2026/row-privacy-policy
+  acquisition:
+    stage: research
+    origin: tavily
+    query: OpenAI privacy policy user chat data AI model training
+- id: 2025/meta-is-training-ai-on-your-private-messages-and-instagram-has-been-watching-you-all-along-d6d9d5467c7c
+  url: https://medium.com/@frat1309/meta-is-training-ai-on-your-private-messages-and-instagram-has-been-watching-you-all-along-d6d9d5467c7c
+  title: Meta Is Training AI on Your Private Messages and Instagram Has Been Watching
+    You All Along
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Your data has value. Your consent matters. And unlike what Meta’s business
+      model suggests, they’re not entitled to either just because they built a popular
+      app.
+    found: true
+    checked_against: page
+    passage: and data, and refusing to accept surveillance and unconsented AI training
+      as the inevitable price of connection. Your data has value. Your consent matters.
+      And unlike what Meta's business model suggests, they're not entitled to either
+      just because they built a popular app. The Instagram listening rumors persist
+      because users intuitively understand something is wrong. They're right - not
+  - text: '"Meta’s announcement about AI training simply made explicit what was always
+      implicit: your digital life is not private, and the company collecting your
+      data doesn’t believe they need your permission beyond the broadest legal cover."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: The value exchange is becoming clearer. Your data generates billions in
+      advertising revenue, powers next-generation AI systems that Meta will monetize,
+      and creates competitive advantages worth hundreds of billions in market capitalization.
+    found: true
+    checked_against: page
+    passage: than money - their attention, data, and behavioral patterns, collected
+      without meaningful understanding or consent. The value exchange is becoming
+      clearer. Your data generates billions in advertising revenue, powers next-generation
+      AI systems that Meta will monetize, and creates competitive advantages worth
+      hundreds of billions in market capitalization. In return, you get free access
+      to communication tools and social connection - along with surveillance you never
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Meta Messenger WhatsApp chat data AI training disclosures
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/does-claude-train-on-your-data
+  url: https://www.strac.io/blog/does-claude-train-on-your-data
+  title: Does Claude Train on Your Data? (2026 Facts)
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Yes on consumer plans (claude.ai Free/Pro/Max) by default since Aug 28,
+      2025 unless you opt out; no on the API and business plans.
+    found: true
+    checked_against: page
+    passage: '7 min read # Does Claude Train on Your Data? (2026 Facts) Yes on consumer
+      plans (claude.ai Free/Pro/Max) by default since Aug 28, 2025 unless you opt
+      out; no on the API and business plans. Retention, opt-out, and how to keep sensitive
+      data out of Claude entirely. [![Aatish'
+  - text: 'The retention change is the part people miss: leaving the training setting
+      on extends how long your conversations can sit in Anthropic’s pipeline from
+      30 days to as much as five years.'
+    found: true
+    checked_against: page
+    passage: 'not used for training; retention stays at 30 days | | Existing users
+      | Were prompted to choose by September 28, 2025 | The retention change is the
+      part people miss: leaving the training setting on extends how long your conversations
+      can sit in Anthropic''s pipeline from 30 days to as much as five years. Anthropic
+      has said it de-identifies this data and does not sell it - but it is still your
+      content, in a training set,'
+  - text: '"Only if you control the account and the data. The safer approach is to
+      redact sensitive data before it reaches Claude—because employees often use personal
+      Claude accounts (which do train by default)."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Anthropic Claude user interactions training data by default
+- id: 2025/meta-to-use-eu-user-content-for-ai-training-as-opt-out-period-ends
+  url: https://europeannewsroom.com/meta-to-use-eu-user-content-for-ai-training-as-opt-out-period-ends
+  title: Meta to Use EU User Content for AI Training as Opt-Out Period Ends
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Despite concerns over data protection, Meta can now use your social media
+      posts on its platforms to train its AI models.
+    found: true
+    checked_against: page
+    passage: More EU news is available on the wire services of the respective news
+      agency. Despite concerns over data protection, Meta can now use your social
+      media posts on its platforms to train its AI models. ![Die Apps Facebook, Messenger,
+      Instagram und WhatsApp werden auf einem Smartphone-Display angezeigt in dem
+      das Logo
+  - text: The company plans to analyse all public content shared by adult users across
+      the EU to improve its AI models, unless users have actively objected.
+    found: true
+    checked_against: page
+    passage: train its artificial intelligence (AI) software Meta AI, after the deadline
+      for users to opt out expired on Tuesday. The company plans to analyse all public
+      content shared by adult users across the EU to improve its AI models, unless
+      users have actively objected. A German court on Friday dismissed a complaint
+      by the consumer protection agency in the western state of North
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Meta Messenger WhatsApp chat data AI training disclosures
+- id: 2026/threat-intelligence-report-september-2026
+  url: https://www.anthropic.com/threat-intelligence-report-september-2026
+  title: 'Detecting and Countering Misuse of AI: September 2026 Threat Intelligence
+    Report'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Sophisticated and persistent threat actors continuously test our safeguards
+      and try to circumvent the technical measures we use to detect and prevent misuse.
+    found: true
+    checked_against: page
+    passage: of fake dating apps designed to defraud users to surveillance systems
+      built to identify and monitor dissidents. Sophisticated and persistent threat
+      actors continuously test our safeguards and try to circumvent the technical
+      measures we use to detect and prevent misuse. We'll continue to evolve our safeguards
+      and coordinate with our partners to improve our ability to detect, disrupt,
+      and
+  - text: We’ll continue to evolve our safeguards and coordinate with our partners
+      to improve our ability to detect, disrupt, and prevent future misuse.
+    found: true
+    checked_against: page
+    passage: continuously test our safeguards and try to circumvent the technical
+      measures we use to detect and prevent misuse. We'll continue to evolve our safeguards
+      and coordinate with our partners to improve our ability to detect, disrupt,
+      and [prevent future misuse.](https://www.anthropic.com/news/building-safeguards-for-claude)
+      We hope that the findings in this report will help other developers recognize
+      similar patterns on their own platforms,
+  - text: The cybersecurity skills of AI models means that AI has collapsed the labor
+      and tooling gap that used to separate well-resourced, state-sponsored operations
+      from individual operators.
+    found: true
+    checked_against: page
+    passage: 'and how they highlight those trends. ### Trends #### Sophisticated attacks
+      no longer require sophisticated attackers The cybersecurity skills of AI models
+      means that AI has collapsed the labor and tooling gap that used to separate
+      well-resourced, state-sponsored operations from individual operators. In the
+      case studies we report below, a hacktivist using stolen API keys, disparate
+      financially motivated individuals,'
+  - text: Access to the uplift granted by AI is highly sought after by malicious actors
+      and the broader criminal economy.
+    found: true
+    checked_against: page
+    passage: 'hands-on efforts exclusively on domestic China victims. ## AI supply
+      chain as target, loot, and attack compute Access to the uplift granted by AI
+      is highly sought after by malicious actors and the broader criminal economy.
+      Access to AI in the form of compromised API keys, session tokens, and devices
+      has increasingly become the sole'
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: third party audits AI chat data default training OpenAI Google Anthropic
+      Meta
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/row-privacy-policy
+  url: https://openai.com/policies/row-privacy-policy
+  title: ROW Privacy Policy
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"We collect personal data relating to you as follows: Account Information,
+      User Content, Communication Information, Location Information, Device Information,
+      and more."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"We use Personal Data to provide, analyze, and maintain our Services, improve
+      and develop our Services, personalize your experience, and protect against fraud."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"You have rights including access, rectification, deletion, and restriction
+      of how we process your Personal Data depending on where you live."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Our Services are not directed to, or intended for, children under 13. We
+      do not knowingly collect Personal Data from children under 13.
+    found: true
+    checked_against: page
+    passage: 'of where it is processed, and only transfer that data pursuant to legally
+      valid transfer mechanisms. ## 7. Children Our Services are not directed to,
+      or intended for, children under 13. We do not knowingly collect Personal Data
+      from children under 13. If you have reason to believe that a child under 13
+      has provided Personal Data to OpenAI through the Services, please'
+  - text: '"We implement commercially reasonable technical, administrative, and organizational
+      measures designed to protect Personal Data from loss, misuse, and unauthorized
+      access."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  shared_with:
+  - 2026/enterprise-privacy
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: OpenAI privacy policy user chat data AI model training
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/gemini-google-ai-training-opt-out
+  url: https://meprism.com/opt-out-guides/blog/gemini-google-ai-training-opt-out
+  title: How to Opt Out of Gemini AI Data Collection (Google)
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Opt out of AI services use of your personal information for future training
+      data.
+    found: true
+    checked_against: page
+    passage: '**Opt out of AI services use of your personal information for future
+      training data.** Google''s Gemini AI assistant keeps activity records and personalizes
+      responses based on your past conversations by'
+  - text: Consumer AI products use chats, posts, and account data to train models
+      by default. Once your information is included in a training run, it cannot be
+      removed retroactively.
+    found: true
+    checked_against: page
+    passage: collection going forward. This 2026 guide covers the main controls available,
+      what they do, and what to watch for. **Why this matters.** Consumer AI products
+      use chats, posts, and account data to train models by default. Once your information
+      is included in a training run, it cannot be removed retroactively. The earlier
+      you opt out, the more of your data stays out. Priwall by mePrism tracks every
+      major AI opt-out so you can
+  - text: I assumed my data was already 'in there' so why bother. Priwall by mePrism
+      showed me what I could still control today and the impact going forward.
+    found: true
+    checked_against: page
+    passage: 'Gemini Settings, look for the Connected apps or Extensions area and
+      disconnect any third-party app you no longer use. > *"I assumed my data was
+      already ''in there'' so why bother. Priwall by mePrism showed me what I could
+      still control today and the impact going forward. Eye-opening."* - Priya R.,
+      Boston MA, mePrism customer [**See pricing →**](https://meprism.com/pricing)
+      ## Related'
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google Assistant chat data used for AI training by default
+- id: 2025/anthropic-uses-chats-train-claude-opt-out-data-privacy-2025-8
+  url: https://www.businessinsider.com/anthropic-uses-chats-train-claude-opt-out-data-privacy-2025-8
+  title: Anthropic to Use User Chats to Train Claude AI Model Starting September 28
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"Anthropic will make user chats and coding sessions available to train
+      its models."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Training on real-world conversations and coding data will help us make Claude
+      better.
+    found: true
+    checked_against: page
+    passage: to Business Insider, an Anthropic spokesperson said the policy changes
+      will help improve its data training process. "Training on real-world conversations
+      and coding data will help us make Claude better. When a developer debugs code
+      with Claude or someone gets help writing an email, those interactions provide
+      the model
+  - text: The five-year retention also helps our safety classifiers learn to detect
+      harmful usage patterns over time.
+    found: true
+    checked_against: page
+    passage: what doesn't," the spokesperson said. "This creates a feedback loop that
+      helps future models improve on similar tasks. The five-year retention also helps
+      our safety classifiers learn to detect harmful usage patterns over time." The
+      changes came a day after Anthropic published a report that said its chatbot
+      Claude had been weaponized by
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Anthropic Claude user interactions training data by default
+- id: 2026/how-to-opt-out-of-meta-ai
+  url: https://us.norton.com/blog/ai/how-to-opt-out-of-meta-ai
+  title: 'How to Opt Out of Meta AI: Options to Protect Your Data'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Meta AI collects your public and chatbot data across Facebook, Instagram,
+      and WhatsApp to train its AI models
+    found: true
+    checked_against: page
+    passage: '3. How to opt out of Meta AI: Options to protect your data # How to
+      opt out of Meta AI: Options to protect your data Meta AI collects your public
+      and chatbot data across Facebook, Instagram, and WhatsApp to train its AI models,
+      sparking privacy concerns for some users. Find out what you can do to limit
+      Meta AI''s access to your data, and how Norton AntiTrack can help you stay more'
+  - text: There’s no automatic opt-out button for Meta AI, but you can submit an objection
+      requesting that Meta doesn’t use your data from third parties for AI training.
+    found: true
+    checked_against: page
+    passage: 'take to better protect your data and regain some control over what you
+      share. ## How to turn off Meta AI on Facebook There''s no automatic opt-out
+      button for Meta AI, but you can submit an objection requesting that Meta doesn''t
+      use your data from third parties for AI training. The process for objecting
+      is fairly complicated, requiring you to fill out a form with proof that a Meta
+      AI tool'
+  - text: The only guaranteed way to protect your information from being used for
+      AI training is to delete your Facebook account.
+    found: true
+    checked_against: page
+    passage: Screenshots of Meta's AI privacy policy and opt-out form. If Meta denies
+      your request, the only guaranteed way to protect your information from being
+      used for AI training is to [delete your Facebook account](/blog/how-to/delete-facebook-account).
+      It's a tough call, but it's currently the most effective option for users who
+      prioritize data privacy. It's also worth
+  - text: Meta states it does not use content from private posts, so if you never
+      post publicly, your data shouldn’t be included in AI training.
+    found: true
+    checked_against: page
+    passage: 'It''s a tough call, but it''s currently the most effective option for
+      users who prioritize data privacy. It''s also worth noting that Meta states
+      it **does not use content from private posts**, so if you never post publicly,
+      your data shouldn''t be included in AI training. ## How to turn off Meta AI
+      on Instagram Instagram users can follow similar steps to submit an objection
+      request'
+  - text: There’s no way to submit an objection request directly through WhatsApp.
+    found: true
+    checked_against: page
+    passage: 'showing how to opt out of Meta AI through the Instagram app''s settings.
+      ## Can you opt out of Meta AI on WhatsApp? There''s no way to submit an objection
+      request directly through WhatsApp. While there was previously a toggle to turn
+      off AI features, Meta has since removed this option. Instead, you can'
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Meta Messenger WhatsApp chat data AI training disclosures
+audit:
+  analyst_verdict: 'false'
+  auditor_verdict: 'false'
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: true
+  auditor_reasoning: Google's Gemini is documented by independent reports to train
+    on user chats by default in the US, requiring an opt‑out. Anthropic's consumer‑plan
+    Claude is reported to train on chats by default (Strac.io), though other coverage
+    mentions explicit opt‑in/opt‑out, indicating default training for at least some
+    users. Meta's AI is described as collecting public and chatbot data for training
+    with no automatic opt‑out, implying default use. However, OpenAI's own enterprise
+    privacy documentation explicitly states it does not train models on user data
+    by default, contradicting the claim that all four companies train by default.
+    Since the claim is false for OpenAI, the overall statement is false.
+  evidence_gaps:
+  - OpenAI source addresses only enterprise and business services; no source confirms
+    policy for consumer ChatGPT, leaving a gap about whether all OpenAI assistants
+    train by default.
+  - 'Anthropic evidence is mixed: Strac.io states default training for consumer plans,
+    while Business Insider mentions explicit opt‑in/opt‑out, creating uncertainty
+    about the default for all users.'
+  - Meta source notes that private posts may not be used, so the extent of training
+    on 'your chats' (including private messages) is not fully clarified.
+  needs_review_reasons:
+  - 2+ evidence gaps
+  pipeline_verdict: 'false'
+  pipeline_confidence: medium
+  rule_applied: agreed
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
+analyst_record:
+  title: In the US, OpenAI, Google, Anthropic and Meta all train their AI assistants
+    on your chats by default.
+  seo_title: OpenAI, Google, Anthropic Meta train chats
+  verdict: 'false'
+  cap_rationale: null
+  uncited_by_title:
+  - 2025/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off
+  - 2026/enterprise-privacy
+  - 2025/meta-is-training-ai-on-your-private-messages-and-instagram-has-been-watching-you-all-along-d6d9d5467c7c
+  - 2026/does-claude-train-on-your-data
+  - 2026/gemini-google-ai-training-opt-out
+  - 2025/anthropic-uses-chats-train-claude-opt-out-data-privacy-2025-8
+  - 2026/how-to-opt-out-of-meta-ai
