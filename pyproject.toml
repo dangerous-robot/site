@@ -3,19 +3,22 @@ members = ["pipeline"]
 
 # Security floors for transitive dependencies with high/critical advisories
 # (pip-audit, 2026-10-02), plus medium ones in the pipeline (OSV, 2026-10-07:
-# idna, pydantic-ai-slim, pydantic-settings). uv only reads constraint-dependencies from the
+# idna, pydantic-ai-slim, pydantic-settings). Raised and extended 2026-11-10 for
+# SEC-BP: authlib, dnspython, joserfc, pyasn1. uv only reads constraint-dependencies from the
 # workspace root, so these cannot live in pipeline/pyproject.toml.
 [tool.uv]
 constraint-dependencies = [
     "aiohttp>=3.14.3",
     "anyio>=4.14.2",
+    "authlib>=1.9.1",
     "cryptography>=50.0.0",
+    "dnspython>=2.9.0",
     "idna>=3.15",
-    "joserfc>=1.6.8",
+    "joserfc>=1.7.6",
     "mcp>=1.28.1",
     "pydantic-ai-slim>=1.106.0,<2",
     "pydantic-settings>=2.14.2",
-    "pyasn1>=0.6.4",
+    "pyasn1>=0.6.5",
     "pyjwt>=2.14.0",
     "python-multipart>=0.0.30",
     "soupsieve>=2.8.4",
