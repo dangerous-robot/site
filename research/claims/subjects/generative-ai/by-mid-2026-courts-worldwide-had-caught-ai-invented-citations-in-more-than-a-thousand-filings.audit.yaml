@@ -1,0 +1,639 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-11-10T00:07:44.959197+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+  run_id: 32bd949df4ae4cb5a7150c4d67170abb
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  rejected:
+  - url: https://www.facebook.com/abc27news/posts/the-commonwealth-of-pennsylvania-may-require-lawyers-and-other-court-filers-to-v/1613326114158947
+    title: The Commonwealth of Pennsylvania may require lawyers ...
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.leanlaw.co/blog/the-hallucination-problem-a-checklist-for-verifying-ai-generated-legal-citations
+    title: 'AI Citation Verification: A Law Firm Checklist | LeanLaw'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://law-duq.libguides.com/c.php?g=1299908&p=11016323
+    title: Lawyers Using Hallucinated Cases - Generative AI & Legal Education - Research
+      Guides Home at Law Library
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.reddit.com/r/Ask_Lawyers/comments/1ndpw87/how_do_you_all_verify_aigenerated_legal_research
+    title: How do you all verify AI-generated legal research?
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://hai.stanford.edu/news/ai-trial-legal-models-hallucinate-1-out-6-or-more-benchmarking-queries
+    title: 'AI on Trial: Legal Models Hallucinate in 1 out of 6 (or More) Benchmarking
+      Queries | Stanford HAI'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.quora.com/Do-you-use-AI-tools-like-ChatGPT-for-legal-research-Have-you-ever-found-inaccurate-or-missing-citations-in-the-outputs-Would-a-tool-that-double-checks-and-cites-real-sources-be-useful-to-you
+    title: Do you use AI tools like ChatGPT for legal research?, Have ...
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.sll.texas.gov/faqs/ai-hallucinate-citation
+    title: I can't find a case I looked up. Is it an AI error?
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://legaleasecitations.com
+    title: Bluebook Citation Generator and Checker | LegalEase Citations
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://gc.ai/blog/legal-ai-tools
+    title: 'Legal AI Tools: Compare Platforms for Lawyers (2026) · GC AI'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://libguides.law.ucdavis.edu/genaiforlawstudents/tools
+    title: Generative AI in Legal Education and Practice - Generative AI Tools and
+      Resources for Law Students - Research Guides at UC Davis Mabie Law Library
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.clearbrief.com
+    title: Home | Clearbrief
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.facebook.com/fijibroadcastingcorporation.news/posts/cases-of-artificial-intelligence-generating-fake-legal-references-have-come-to-l/1184432463911430
+    title: '1.3K views · 14 reactions | Cases of artificial intelligence generating
+      fake legal references have come to light, raising concerns that lawyers dependent
+      on the technology could make mistakes that affect the delivery of justice.
+
+
+      #FBCNews #FijiNews #news | FBC News'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.reddit.com/r/law/comments/13sre67/fake_aigenerated_citations_in_federal_court
+    title: 'Fake AI-Generated Citations in Federal Court : r/law'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://spellbook.com/learn/ai-legal-brief-writing
+    title: 'Best AI for Legal Brief Writing in 2026: Tools That Prevent Fake Citations
+      - Spellbook'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.facebook.com/nbcpalmsprings/posts/the-roggin-report-two-california-attorneys-found-themselves-in-hot-water-after-f/1426573899491754
+    title: NBC Palm Springs
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.typelaw.com/citations
+    title: AI-Powered Legal Brief Citations for Locally-Compliant References
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.lumay.ai/blogs/verify-ai-generated-legal-citations-workflow
+    title: 'AI Citation Checking for Legal Briefs: Verification Workflow'
+    score: null
+    reason: scored below 3 on every sub-question
+  queries:
+  - courts acknowledge AI citations legal filings 2024
+  - legal databases track AI-generated citations cases
+  - lawyers disclose AI-generated citations court examples
+  - court retractions AI-generated citations cases
+  - AI tools generate legal citations deployment
+  - courts reject filings AI-generated citations
+  planner_rationale: The sub-questions cover the claim by addressing judicial acknowledgment,
+    database documentation, public disclosures, counter-evidence (retractions/rejections),
+    and technical adoption of AI-generated citations.
+  candidates_seen: 42
+  urls_kept: 24
+  urls_dropped: 17
+  scorer_rationale: The scoring process retained candidates addressing at least one
+    sub-question with relevance scores of 3 or higher. Key themes included judicial
+    rulings and sanctions for AI-generated citations (sq1), documented cases and databases
+    (sq2), and explicit disclosures or corrections by legal professionals or firms
+    (sq3/sq4). High-scoring candidates such as the AI Hallucination Cases Database
+    and NexLaw’s reports provided quantitative and contextual evidence, while lower
+    scores were assigned to content lacking specificity or detailed substantiation.
+    Forum-based and tertiary sources without primary evidence were excluded. Candidates
+    addressing AI tools capable of generating citations (sq5) were retained if they
+    demonstrated methodological rigor and differential deployment advantages over
+    generic AI, such as NexLaw’s retrieval-based architecture.
+  urls_after_blocklist: 22
+sub_questions:
+- id: sq1
+  question: What judicial or legal bodies have explicitly acknowledged or ruled on
+    AI-generated citations in court filings as of mid-2024?
+  rationale: Establishes a baseline for cases involving AI-generated citations and
+    identifies judicial trends globally.
+  kind: coverage
+  queries:
+  - courts acknowledge AI citations legal filings 2024
+  citations:
+  - 2026/publication-first-published-opinion-on-ai-fabricated-citations-in-legal-briefs
+  - 2024/tracking-new-court-reporting-requirements-on-lawyer-ai-use
+  - 2025/thefalloutofaihallucinationsincourtfilingspdf
+  - 2023/ai-tracker
+  - 2026/lawyers-ai-fake-citations-what-to-know
+  snippet_only:
+  - 2026/lawyer-fined-using-ai-legal-fake-citations
+  - 2025/federal-court-turns-up-the-heat-on-attorneys-using-chatgpt-for-research
+- id: sq2
+  question: Which legal databases or repositories document cases involving AI-generated
+    citations in filings, and what is their reported prevalence?
+  rationale: Provides quantitative evidence on the adoption of AI-generated citations
+    in legal contexts.
+  kind: coverage
+  queries:
+  - legal databases track AI-generated citations cases
+  citations:
+  - 2026/hallucinations
+  - 2026/best-ai-tools-verify-legal-citations-2026
+  - 2026/ai-citation-errors-legal-research-2026
+  - 2026/lawyers-ai-fake-citations-what-to-know
+  snippet_only:
+  - 2026/lawyer-fined-using-ai-legal-fake-citations
+  - 2023/ai-tracker
+- id: sq3
+  question: Have legal professionals or firms publicly disclosed using AI-generated
+    citations in court filings, and what are the known examples?
+  rationale: Highlights real-world instances of AI-generated citations in legal practice.
+  kind: coverage
+  queries:
+  - lawyers disclose AI-generated citations court examples
+  citations:
+  - 2026/hallucinations
+  - 2026/lawyer-fined-using-ai-legal-fake-citations
+  - 2025/federal-court-turns-up-the-heat-on-attorneys-using-chatgpt-for-research
+  - 2026/ai-citation-errors-legal-research-2026
+  - 2025/thefalloutofaihallucinationsincourtfilingspdf
+  - 2023/ai-tracker
+  - 2026/lawyers-ai-fake-citations-what-to-know
+  snippet_only:
+  - 2026/publication-first-published-opinion-on-ai-fabricated-citations-in-legal-briefs
+- id: sq4
+  question: Are there any documented cases of retractions, formal corrections, or
+    ethical warnings issued by courts or legal authorities regarding AI-generated
+    citations in filings?
+  rationale: Falsifies the claim if evidence of retractions or corrections exists.
+  kind: counter-evidence
+  queries:
+  - court retractions AI-generated citations cases
+  - courts reject filings AI-generated citations
+  citations:
+  - 2026/publication-first-published-opinion-on-ai-fabricated-citations-in-legal-briefs
+  - 2025/thefalloutofaihallucinationsincourtfilingspdf
+  - 2023/ai-tracker
+  - 2026/lawyers-ai-fake-citations-what-to-know
+  snippet_only:
+  - 2026/hallucinations
+  - 2026/lawyer-fined-using-ai-legal-fake-citations
+  - 2025/federal-court-turns-up-the-heat-on-attorneys-using-chatgpt-for-research
+- id: sq5
+  question: Which AI tools or models are capable of generating citations for legal
+    or academic documents, and how are they being deployed?
+  rationale: Explores the technical mechanisms enabling AI-generated citations in
+    legal practice.
+  kind: coverage
+  queries:
+  - AI tools generate legal citations deployment
+  citations:
+  - 2026/best-ai-tools-verify-legal-citations-2026
+  - 2026/ai-citation-errors-legal-research-2026
+  - 2024/tracking-new-court-reporting-requirements-on-lawyer-ai-use
+  - 2025/thefalloutofaihallucinationsincourtfilingspdf
+  - 2026/watch
+  - 2026/legal-ai-tools-essential-for-attorneys
+  snippet_only: []
+sources_consulted:
+- id: 2026/hallucinations
+  url: https://www.damiencharlotin.com/hallucinations
+  title: AI Hallucination Cases
+  ingested: true
+  quotes: []
+  acquisition:
+    stage: research
+    origin: tavily
+    query: legal databases track AI-generated citations cases
+- id: 2026/lawyer-fined-using-ai-legal-fake-citations
+  url: https://spellbook.com/learn/lawyer-fined-using-ai-legal-fake-citations
+  title: Lawyer Fined for Using AI-Generated Legal Documents with Fake Citations
+  ingested: true
+  quotes:
+  - text: A lawyer is sanctioned for using AI when the lawyer signs a filing containing
+      authority the AI invented and nobody verified it.
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  - text: 'The duty is non-delegable in the sense that matters: a partner who signs
+      a brief drafted by a junior associate, a contract attorney or a vendor has certified
+      it personally.'
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  - text: The sanctions in the record are imposed under the signature rules that already
+      governed filings, which means the exposure attaches at the point of certification.
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  acquisition:
+    stage: research
+    origin: tavily
+    query: courts acknowledge AI citations legal filings 2024
+- id: 2025/federal-court-turns-up-the-heat-on-attorneys-using-chatgpt-for-research
+  url: https://www.esquiresolutions.com/federal-court-turns-up-the-heat-on-attorneys-using-chatgpt-for-research
+  title: Federal Court Turns Up the Heat on Attorneys Using ChatGPT for Research
+  ingested: true
+  quotes:
+  - text: If fines and public embarrassment were effective deterrents, there would
+      not be so many cases to cite.
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  acquisition:
+    stage: research
+    origin: tavily
+    query: courts acknowledge AI citations legal filings 2024
+- id: 2026/publication-first-published-opinion-on-ai-fabricated-citations-in-legal-briefs
+  url: https://www.wshblaw.com/publication-first-published-opinion-on-ai-fabricated-citations-in-legal-briefs
+  title: First Published Opinion on AI-Fabricated Citations in Legal Briefs
+  ingested: true
+  quotes:
+  - text: There is no room in our court system for the submission of fake, hallucinated
+      court citations, facts, or law.
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  - text: the duty of candor— to clients, courts and the law, remains unchanged.
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  acquisition:
+    stage: research
+    origin: tavily
+    query: court retractions AI-generated citations cases
+- id: 2026/best-ai-tools-verify-legal-citations-2026
+  url: https://www.nexlaw.ai/blog/best-ai-tools-verify-legal-citations-2026
+  title: Best AI Tools to Verify Legal Citations (2026)
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: The real problem is not using AI for legal research. It is relying on AI
+      outputs that have not been independently verified before filing.
+    found: true
+    checked_against: page
+    passage: any actual legal database. Courts are no longer warning. They are sanctioning,
+      and the penalties are escalating. The real problem is not using AI for legal
+      research. It is relying on AI outputs that have not been independently verified
+      before filing. Every lawyer who has been sanctioned in the last three years
+      owned an AI tool. The failure was not the tool selection.
+  - text: Lexis+ AI hallucinated on 17 percent of queries. Westlaw AI-Assisted Research
+      hallucinated on 33 percent of queries.
+    found: true
+    checked_against: page
+    passage: of Empirical Legal Studies tested Lexis+ AI and Westlaw AI-Assisted Research,
+      both marketed as hallucination-free. **Lexis+ AI hallucinated** on 17 percent
+      of queries. Westlaw AI-Assisted Research hallucinated on **33 percent of queries**.
+      Both companies disputed the methodology. The study is peer-reviewed. See the
+      [Stanford HAI
+  - text: '"The Stanford researchers found mischaracterization [where a case exists
+      but does not support the claim] to be equally dangerous as outright fabrication."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"ABA Formal Opinion 512 requires lawyers using generative AI to understand
+      its limitations, verify outputs before relying on them."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Using one AI tool to check another AI tool's citations does not constitute
+      independent verification.
+    found: true
+    checked_against: page
+    passage: '33 percent. Human verification remains necessary regardless of platform.
+      ### Can AI verify its own citations? No. Using one AI tool to check another
+      AI tool''s citations does not constitute independent verification. Courts have
+      explicitly rejected this argument. For the full breakdown, see [Using AI to
+      Check AI Citations Is Not'
+  shared_with:
+  - 2026/ai-citation-errors-legal-research-2026
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: legal databases track AI-generated citations cases
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/ai-citation-errors-legal-research-2026
+  url: https://www.nexlaw.ai/blog/ai-citation-errors-legal-research-2026
+  title: 'AI Citation Errors in Legal Research: 4 Risks Lawyers Need to Catch Before
+    Filing in 2026'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"The citation error problem in 2026 is no longer just reckless attorneys
+      copying ChatGPT output... The real risks are quieter, more technical, and more
+      dangerous."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: AI citation errors occur when an AI tool produces legal citations that are
+      fabricated, inaccurate, misapplied to the wrong legal proposition, or constructed
+      from blended sources.
+    found: true
+    checked_against: page
+    passage: 'the professional obligation to verify every citation before filing.
+      ## What Are AI Citation Errors in Legal Research? AI citation errors occur when
+      an AI tool produces legal citations that are fabricated, inaccurate, misapplied
+      to the wrong legal proposition, or constructed from blended sources. These errors
+      differ from traditional research mistakes because they are produced at scale,
+      look authoritative, and'
+  - text: The combination still produced a brief with hallucinated citations.
+    found: true
+    checked_against: page
+    passage: 'the attorneys used three established legal AI tools together: CoCounsel,
+      Westlaw Precision, and Google Gemini. The combination still produced a brief
+      with hallucinated citations. [One attorney stated in court filings](https://www.404media.co/18-lawyers-caught-using-ai-explain-why-they-did-it/)'
+  - text: '"ABA Formal Opinion 512 establishes that existing professional responsibility
+      rules apply fully to AI use."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"general-purpose AI generates plausible-looking text from training patterns
+      without any live connection to legal databases."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  shared_with:
+  - 2026/best-ai-tools-verify-legal-citations-2026
+  acquisition:
+    stage: research
+    origin: tavily
+    query: court retractions AI-generated citations cases
+- id: 2024/tracking-new-court-reporting-requirements-on-lawyer-ai-use
+  url: https://www.aila.org/library/tracking-new-court-reporting-requirements-on-lawyer-ai-use
+  title: Tracking New Court Reporting Requirements on Lawyer AI Use
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Artificial intelligence (AI) is basically computer systems that can perform
+      tasks that are typically associated with human intelligence.
+    found: true
+    checked_against: page
+    passage: 'it is required. First, let''s get a definition of AI from one of the
+      most popular AI products, Google''s Gemini: > Artificial intelligence (AI) is
+      basically computer systems that can perform tasks that are typically associated
+      with human intelligence. This can include things like reasoning, learning, problem-solving,
+      and decision-making. There are two main categories'
+  - text: Some courts require you to tell them about *any* use of AI, and others only
+      require you to report specific types of use, while others have no requirement
+      (currently).
+    found: true
+    checked_against: page
+    passage: 'another newer product, to do your work. If you are, you want to be aware
+      of court requirements for reporting AI use. Some courts require you to tell
+      them about *any* use of AI, and others only require you to report specific types
+      of use, while others have no requirement (currently). Use these resources to
+      keep up with the quickly changing legal landscape of AI: * **[Ropes and Grey
+      Standing Orders'
+  - text: There is a good possibility some of the Rules of Professional Conduct may
+      be changed to account for the new technology in the near future.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: courts acknowledge AI citations legal filings 2024
+- id: 2025/thefalloutofaihallucinationsincourtfilingspdf
+  url: https://iardc.org/Files/TheFalloutOfAIHallucinationsInCourtFilings.pdf
+  title: The Fallout of AI Hallucinations in Court Filings
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: 'Relying on AI to draft motions or briefs without rigorously fact-checking
+      the output risks more than embarrassment: it can result in sanctions, dismissal
+      of claims, or disciplinary action.'
+    found: true
+    checked_against: page
+    passage: '512 Generative Artificial Intelligence Tools, July 29, 2024). Despite
+      this, the misuse of AI in court filings continues. Relying on AI to draft motions
+      or briefs without rigorously fact-checking the output risks more than embarrassment:
+      it can result in sanctions, dismissal of claims, or disciplinary action. Long
+      before AI arrived, we all learned in law school to track the history and treatment
+      of each case cited to ensure'
+  - text: AI doesn’t possess factual knowledge in the traditional sense. It’s trained
+      to predict the next word based on patterns in massive datasets.
+    found: true
+    checked_against: page
+    passage: can be misleading or outright false. To understand why these hallucinations
+      happen, it helps to know how AI "thinks." AI doesn't possess factual knowledge
+      in the traditional sense. It's trained to predict the next word based on patterns
+      in massive datasets. That means it may invent citations or details that sound
+      plausible but are entirely fabricated. Also, AI rarely admits
+  - text: Computers make excellent and efficient servants, but I have no wish to serve
+      under them.
+    found: true
+    checked_against: page
+    passage: 'their best interests, and making ethical One of the most iconic lines
+      from the original Star Trek series comes from Mr. Spock, the embodiment of logic,
+      in an episode where a computer designed to replace the ship''s crew goes rogue
+      and seizes control of the Enterprise: "Computers make excellent and efficient
+      servants, but I have no wish to serve under them." That episode is as relevant
+      today as it was when it first aired in 1968. AI can assist and occasionally
+      inspire, but no'
+  acquisition:
+    stage: research
+    origin: tavily
+    query: courts reject filings AI-generated citations
+- id: 2023/ai-tracker
+  url: https://www.law360.com/pulse/ai-tracker
+  title: Tracking Federal Judge Orders On Artificial Intelligence
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"With the rise of generative artificial intelligence, several federal judges
+      have issued orders requiring lawyers to certify the use and accuracy of AI."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"A Connecticut attorney was sanctioned for submitting an AI-generated brief
+      with fake case citations."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: courts acknowledge AI citations legal filings 2024
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/watch
+  url: https://www.youtube.com/watch?v=B4fVaUYk6hE
+  title: How to Verify AI-Generated Legal Content with Citations
+  ingested: true
+  archive:
+    status: failed
+    error: 'Wayback save failed (ReadTimeout): '
+  quotes:
+  - text: 'If you’re using AI in legal work, the key question is simple: can the output
+      be verified, cited, and defended?'
+    found: true
+    checked_against: page
+    passage: '# How to verify AI-generated legal content with citations ## Channel:
+      LexisNexis UK 3.51K subscribers 2 likes ### Description 234 views Posted: 2026-03-04
+      If you''re using AI in legal work, the key question is simple: can the output
+      be verified, cited, and defended? This video explains a practical, repeatable
+      process for fact-checking AI-generated answers inside Lexis+ AI, step by'
+  - text: You're matching the sentence you want to rely on to the supporting passage
+      in the authority.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Lexis Plus AI doesn't remove the need for fact-checking. It supports a UK
+      appropriate citation-led research process.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: AI tools generate legal citations deployment
+- id: 2026/lawyers-ai-fake-citations-what-to-know
+  url: https://www.lawxyai.com/articles/lawyers-ai-fake-citations-what-to-know
+  title: 'Lawyers, AI & Fake Citations: What to Know'
+  ingested: true
+  archive:
+    status: failed
+    error: 'Wayback save failed (ReadTimeout): '
+  quotes:
+  - text: A lawyer was fined for using AI-generated legal documents that contained
+      fake citations.
+    found: true
+    checked_against: page
+    passage: real, but they are completely made up by an AI tool. This is not a plot
+      from a legal thriller. It actually happened. A lawyer was fined for using AI-generated
+      legal documents that contained fake citations. This case highlights the risks
+      of relying on AI without proper checks. It also raises serious questions about
+      how legal
+  - text: “AI tools generate text based on patterns but do not have the ability to
+      fact-check or verify legal authority.”
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Lawyers must verify the accuracy of their filings, regardless of how the
+      content was generated.
+    found: true
+    checked_against: page
+    passage: the court's attention. In response, the judge imposed a $5,000 fine on
+      the lawyers involved as well as their law firm. The court emphasized that lawyers
+      must verify the accuracy of their filings, regardless of how the content was
+      generated. This incident shows how AI tools can produce outputs that seem credible
+      but are actually false. AI models like ChatGPT
+  - text: Submitting fake citations can result in disciplinary actions, including
+      monetary penalties or formal reprimands.
+    found: true
+    checked_against: page
+    passage: the tribunal. Legal professionals bear the ultimate responsibility for
+      the veracity of information presented in court. Submitting fake citations can
+      result in disciplinary actions, including monetary penalties or formal reprimands.
+      Such conduct can significantly damage the reputation and credibility of the
+      attorney and their associated law firm.
+  - text: Lawyers should recognize that AI tools serve as supplementary resources
+      rather than substitutes for their professional judgment.
+    found: true
+    checked_against: page
+    passage: Regulatory agencies and professional oversight committees are likely
+      to increase their scrutiny in response. Lawyers should recognize that AI tools
+      serve as supplementary resources rather than substitutes for their professional
+      judgment. The responsibility for accuracy remains with the lawyer. Courts have
+      made it clear that failing to verify material
+  acquisition:
+    stage: research
+    origin: tavily
+    query: lawyers disclose AI-generated citations court examples
+- id: 2026/legal-ai-tools-essential-for-attorneys
+  url: https://legal.thomsonreuters.com/blog/legal-ai-tools-essential-for-attorneys
+  title: Trusted Legal AI Tools to Power Research, Drafting, and Analysis
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: AI is not a magic wand. The skills and knowledge you’ve built as a lawyer
+      are still your most valuable asset.
+    found: true
+    checked_against: page
+    passage: '* CoCounsel Legal is purpose-built for the law and is the Fiduciary-Grade
+      AI your team can stake its reputation on AI is not a magic wand. The skills
+      and knowledge you''ve built as a lawyer are still your most valuable asset.
+      However, that doesn''t mean you need to do everything the hard way -in fact,
+      you have an **ethical obligation** as a'
+  - text: 41% of law firms and 47% of corporate legal departments say their organizations
+      are using GenAI in 2026.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"CoCounsel helps improve the quality of our representation. It finds things
+      in 2,000-page police reports and transcripts that humans miss."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Thomson Reuters is leading the way in responsible AI innovation with the
+      launch of the Trust in AI Alliance.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: AI tools generate legal citations deployment
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
+  auditor_reasoning: Source 1 documents 2,217 legal cases where courts addressed AI‑generated
+    hallucinated citations, and Source 2 reports over 1,174 sanctioned filings globally
+    by early 2026. Both figures exceed the claimed threshold of a thousand filings
+    caught by courts worldwide by mid‑2026. Source 3, while reporting a lower count
+    (712), still corroborates the overall trend. The convergence of multiple independent
+    sources directly supporting the claim justifies a true verdict with high confidence.
+  evidence_gaps: []
+  needs_review_reasons: []
+  pipeline_verdict: 'true'
+  pipeline_confidence: high
+  rule_applied: agreed
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
+analyst_record:
+  title: By mid-2026, courts worldwide had caught AI-invented citations in more than
+    a thousand filings.
+  seo_title: 1,000+ AI citations caught by courts 2026
+  verdict: 'true'
+  cap_rationale: null
+  uncited_by_title:
+  - 2026/ai-citation-errors-legal-research-2026
+  - 2025/thefalloutofaihallucinationsincourtfilingspdf

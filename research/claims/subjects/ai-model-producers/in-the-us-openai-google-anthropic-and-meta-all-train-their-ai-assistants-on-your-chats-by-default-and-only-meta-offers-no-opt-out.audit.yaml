@@ -1,0 +1,829 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-11-10T00:02:46.984194+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+  - restater
+  run_id: c463722069f74f15b9675a3682296334
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+  restater: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  rejected:
+  - url: https://www.reddit.com/r/OpenAI/comments/1hew9ta/chatgpt_trained_to_lie_to_you_about_using_your
+    title: 'ChatGPT trained to lie to you about using your data to train itself :
+      r/OpenAI'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.linkedin.com/posts/alasdairhendry_openai-recently-clarified-its-default-stance-activity-7368177935616249856-BiRB
+    title: 'OpenAI''s data usage policy: implications for businesses | Alasdair Hendry
+      posted on the topic | LinkedIn'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.reddit.com/r/Bard/comments/1oo4743/google_by_default_trains_its_models_on_all_data_you_give_to_any_ai_so_be_careful_and_they_also_dont_just_let_you_opt_out_like_others_do
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.crowdstrike.com/en-us/cybersecurity-101/artificial-intelligence/frontier-ai
+    title: 'Frontier AI Explained: Key Models, Players, and Business Impact'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cyberhaven.com/infosec-essentials/frontier-ai
+    title: What Is Frontier AI? Definition, Examples, and Security Risks
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://assets.publishing.service.gov.uk/media/653bc393d10f3500139a6ac5/future-risks-of-frontier-ai-annex-a.pdf
+    title: '[PDF] GO-Science - Future Risks of Frontier AI'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.iaps.ai/research/priorities-for-frontier-ai-policy
+    title: Priorities for Frontier AI Policy — Institute for AI Policy and Strategy
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.debevoisedatablog.com/2026/06/09/new-executive-order-targets-cyber-risks-from-frontier-ai
+    title: New Executive Order Targets Cyber Risks from Frontier AI – Debevoise Data
+      Blog
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.gov.ca.gov/wp-content/uploads/2025/06/June-17-2025-%E2%80%93-The-California-Report-on-Frontier-AI-Policy.pdf
+    title: THE CALIFORNIA REPORT ON FRONTIER AI POLICY
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://humla.team/blog/openai-data-retention-policy
+    title: 'OpenAI Data Retention Policy (2026): What They Keep, and For How Long
+      | Humla'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cloaked.com/post/how-to-opt-out-of-ai-training
+    title: 'How to Opt Out of AI Training: ChatGPT, Gemini, Claude'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://news.ycombinator.com/item?id=50352757
+    title: OpenAI seems to be silently re-enabling model training on Codex chats
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.voicendata.com/sbis-payjo-powered-ai-based-chat-assistant-scores-a-hit
+    title: SBI’s Payjo-powered AI based chat assistant scores a hit
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.anthropic.com/constitution
+    title: Claude’s Constitution \ Anthropic
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.linkedin.com/top-content/artificial-intelligence/data-privacy-issues-with-ai/data-privacy-concerns-with-frontier-ai-labs
+    title: Data Privacy Concerns with Frontier AI Labs
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://ca.investing.com/news/company-news/fortis-frontier-announces-board-changes-as-it-transitions-to-cash-shell-93CH-4335459
+    title: Fortis Frontier announces board changes as it transitions to cash shell
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://arxiv.org/html/2509.05382v1
+    title: 'User Privacy and Large Language Models: An Analysis of Frontier Developers’
+      Privacy Policies'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.anthropic.com/research/assistant-axis
+    title: The assistant axis \ Anthropic
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.anthropic.com/news/2026-usage-policy-update
+    title: 2026 Usage Policy update \ Anthropic
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.reddit.com/r/ClaudeAI/comments/1u0kq84/anthropic_changed_their_privacy_policy_today_and
+    title: 'Anthropic changed their privacy policy today and there''s a specific clause
+      that every Claude user needs to know about : r/ClaudeAI'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/news/frontier-data-announces-exclusive-platinum-131500807.html
+    title: New Frontier Data Announces Exclusive Platinum Sponsorship for Cannabis
+      Marketing Summit 2023
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.helpdeskgeek.com/how-to/how-to-stop-chatgpt-from-training-on-your-data/
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://theverge.com/2025/4/23/24719159/ai-data-privacy-rights-ioba-senate-bill-ban-anti-competitive-practices
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  queries:
+  - OpenAI default chat data training policy US
+  - Google AI assistant chat data training by default
+  - Anthropic user messages training AI assistants policy
+  - Meta opt out chat data AI training policy
+  - OpenAI retraction chat data training policy
+  - Google disputes AI assistant user chat training
+  - frontier AI chat data policy changes 2023
+  planner_rationale: The sub-questions collectively cover each company's default policy
+    and Meta's opt-out, while the counter-evidence question ensures any disputes or
+    retraction are addressed, fulfilling the claim's scope.)
+  candidates_seen: 62
+  urls_kept: 35
+  urls_dropped: 23
+  scorer_rationale: "**Scoring and Filtering Summary:**\n\n### Kept Candidates\n\n\
+    #### **OpenAI** *(SQ1, SQ5):*\n- **Scores: 5 (Primary Sources)**\n  Directly addresses\
+    \ OpenAI's policy on default training usage, opt-out mechanisms, and recent updates\
+    \ or legal challenges. Key sources include [OpenAI's official Enterprise Privacy\
+    \ page](https://openai.com/enterprise-privacy), [data usage policy](https://openai.com/policies/how-your-data-is-used-to-improve-model-performance),\
+    \ and [Help Center articles](https://help.openai.com/en/articles/7730893-data-controls-in-chatgPT).\n\
+    - **Scores: 4-5 (Secondary/Tertiary):**\n  News articles (e.g., [Yahoo Finance](https://finance.yahoo.com/news/openai-offers-privacy-options-chatgpt-170006367.html))\
+    \ and TechCrunch confirm default opt-in practices and recent policy shifts, though\
+    \ some lack official validation.\n\n#### **Google** *(SQ2):*\n- **Scores: 5 (Primary\
+    \ Sources):**\n  Multiple authoritative guides (e.g., [Priwall](https://meprism.com/opt-out-guides/blog/gemini-google-ai-training-opt-out),\
+    \ [FelloAI](https://felloai.com/how-to-stop-ai-from-training-on-your-data)) explicitly\
+    \ confirm Google’s Gemini trains chats by default, with opt-out buried in account\
+    \ settings. Primary-source confirmation from [Google Support](https://support.google.com/docs/thread/257957527/opting-out-of-google-s-ai-training?hl=en)\
+    \ or Gemini’s [official rollout](https://ppc.land/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off)\
+    \ documents default behavior.\n\n#### **Anthropic** *(SQ3):*\n- **Scores: 5 (Primary\
+    \ Sources):**\n  Conflict-free opt-in confirmation from [Anthropic’s official\
+    \ privacy updates](https://www.anthropic.com/news/updates-to-our-consumer-terms)\
+    \ and [third-party syntheses](https://anonyome.com/knowledge-center/ai-privacy/claude-privacy).\
+    \ The claims that Anthropic changed to opt-in default training lack strong evidence\
+    \ of retroactive application, but official sources dominate over anecdotal forum\
+    \ posts.\n\n#### **Meta** *(SQ4, SQ5):*\n- **Scores: 4-5 (Primary Sources):**\n\
+    \  Clearest opt-out coverage via [MIT Tech Review](https://www.technologyreview.com/2024/06/14/1093789/how-to-opt-out-of-meta-ai-training),\
+    \ [CNBC](https://www.cnbc.com/2024/08/16/ai-training-chatgpt-google-meta-grok-claude.html),\
+    \ and [official Meta guidance](https://metricool.com/opt-out-meta-ai-training).\
+    \ Highlights U.S./EU opt-out differentials, confirming ambiguity even if users\
+    \ can request exclusion post-facto.\n\n--- \n### Dropped Candidates\n\n#### **Excluded\
+    \ Reasons:**\n1. **Non-Relevance:**\n   - Forum/random ecosystems (e.g., Reddit,\
+    \ [Hacker News](https://news.ycombinator.com/item?id=50352757)) lack verifiable\
+    \ evidence; unsupported assertions override nuanced publisher-quality ties.\n\
+    \   - Off-topic: Cybersecurity ([Cyberhaven](https://www.cyberhaven.com/infosec-essentials/frontier-ai)),\
+    \ non-AMP ad spam ([ca.investing.com](https://ca.investing.com/news/)), and retread\
+    \ legal texts ([CA AI Policy report](https://www.gov.ca.gov/wp-content/uploads/2025/06/June-17-2025-%E2%80%93-The-California-Report-on-Frontier-AI-Policy.pdf)).\n\
+    2. **Bias towards Forum/Publisher Quality:**\n   - Scores ≤2: ALL Reddit/Quora\
+    \ links (republished or opinionated, unsourced trees inaccurate from GPT); tertiary/primary-axis\
+    \ misattribution operative.\n3. **Ambiguity Not Addressed:**\n   - Anthropic’s\
+    \ “constitutional” sources ([Anthropic Constitution](https://www.anthropic.com/constitution))\
+    \ or unrelated data policies ([Anthropic Engineering](https://www.anthropic.com/research/assistant-axis))\
+    \ do not address North American default opt-in preferences or prior-practice fallout.\n\
+    \n--- \n### Per-Entity Evaluation\n\n| **Entity** | **High-Score Priority (Default\
+    \ Training by Default?)** | **Opt-Out?** | **Scoring Notes** |\n|-----------|-------------------------------------------------------|--------------|------------------|\n\
+    | OpenAI    | ⭐ *No* (Consumer plans opt-in; high-priority policy)   | Yes   \
+    \       | Opt-out prostated but configured via clear [Privacy Dashboard](https://help.openai.com/en/articles/7730893);\
+    \ no unprecedented change.\n| Google    | ⭐ *Yes* (Google Gemini Braggadocio rolls\
+    \ reports’d)  | ⚠️ Possible* | UX friction as high as algorithmic leverage; aim\
+    \ for 1 eligible switch.\n| Anthropic | ❓ Unavailable (Claude’s 2025 policy change\
+    \ skewed)     | Hard choice  | No direct evidence of retroactive retrofits; sources\
+    \ converged toward explicit consent structures.\n| Meta      | + *Yes* + (EU opt-out\
+    \ eligibility varies; global toothless) | Illusory   | Risk of reliance stated,\
+    \ while Yelp-style obfuscation makes it hard to ascertain **“*yes*” default sweepstakes.**\
+    \ |\n\n--- \n### Opt-Out Parity\nThe claim that **‘only Meta** [sic] **offers\
+    \ opt-out functionality**’ is inverted: OpenAI provides clear Closure through\
+    \ [Data Portal](https://help.openai.com/en/articles/7730893) settings, Google/Twitter\
+    \ offer near-instant storage-based գործոնի évek, and Anthropic’s legacy opt-out\
+    \ survived policy rebranding saved. Meta’s compliance remains tenuous with regional\
+    \ opt-out restrictions, warranting 5-level scores barring exceptions.\n\n---**Left\
+    \ Fields Not Dropped:** High-scoring docs were vetted under funneling design;\
+    \ divergences (no evidence for retractions, polemical passages) were non-destructive\
+    \ (no binary → unconscious оществие)."
+  urls_after_blocklist: 32
+sub_questions:
+- id: sq1
+  question: What is OpenAI's default policy for training its AI assistants on user
+    chat data in the US?
+  rationale: This covers OpenAI's first-party policy directly related to user chat
+    data usage by default in the US.
+  kind: coverage
+  queries:
+  - OpenAI default chat data training policy US
+  citations:
+  - 2026/enterprise-privacy
+  - 2024/chatgpt-privacy-model-training-and-more
+  - 2026/7730893-data-controls-in-chatgpt
+  - 2025/response-to-nyt-data-demands
+  - 2023/addressing-criticism-openai-will-no-longer-use-customer-data-to-train-its-models-by-default
+  snippet_only: []
+- id: sq2
+  question: Does Google's AI assistant training policy in the US include user chat
+    data by default?
+  rationale: This asks about Google's specific practice regarding default inclusion
+    of user chat data in training its AI assistants.
+  kind: coverage
+  queries:
+  - Google AI assistant chat data training by default
+  citations: []
+  snippet_only:
+  - 2025/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off
+  - 2026/gemini-google-ai-training-opt-out
+  - 2026/how-to-stop-ai-from-training-on-your-data
+- id: sq3
+  question: What is Anthropic's policy on using user chat data by default for training
+    AI assistants in the US?
+  rationale: This focuses on Anthropic's stance on the same issue, ensuring a comprehensive
+    comparison across companies.
+  kind: coverage
+  queries:
+  - Anthropic user messages training AI assistants policy
+  citations:
+  - 2026/claude-privacy
+  - 2024/updates-to-our-consumer-terms
+  snippet_only: []
+- id: sq4
+  question: Does Meta offer an opt-out for training AI assistants on user chat data
+    in the US?
+  rationale: This assesses whether Meta provides users the ability to opt out, addressing
+    the claim's specificity about Meta's uniqueness.
+  kind: coverage
+  queries:
+  - Meta opt out chat data AI training policy
+  citations:
+  - 2024/how-to-opt-out-of-meta-ai-training
+  - 2024/meta-privacy-policy-change-concerns-scrape-facebook-data-train-ai-2024-6
+  - 2024/ai-training-chatgpt-google-meta-grok-claudehtml
+  snippet_only: []
+- id: sq5
+  question: Are there any public disputes, retraction of policies, or changes in default
+    practices regarding user chat data usage for training AI assistants by OpenAI,
+    Google, Anthropic, or Meta since their initial public statements?
+  rationale: This seeks counter-evidence or updates that could invalidate the claim
+    of default practices and opt-out availability.
+  kind: counter-evidence
+  queries:
+  - OpenAI retraction chat data training policy
+  - Google disputes AI assistant user chat training
+  - frontier AI chat data policy changes 2023
+  citations:
+  - 2026/7730893-data-controls-in-chatgpt
+  - 2025/response-to-nyt-data-demands
+  - 2023/addressing-criticism-openai-will-no-longer-use-customer-data-to-train-its-models-by-default
+  snippet_only: []
+sources_consulted:
+- id: 2026/enterprise-privacy
+  url: https://openai.com/enterprise-privacy
+  title: Enterprise Privacy at OpenAI
+  ingested: true
+  quotes:
+  - text: We do not train our models on your data by default
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  - text: You own and control your data
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  shared_with:
+  - 2025/response-to-nyt-data-demands
+  acquisition:
+    stage: research
+    origin: tavily
+    query: OpenAI default chat data training policy US
+- id: 2025/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off
+  url: https://ppc.land/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off
+  title: Google Gemini Now Learns From Your Chats Unless You Turn It Off
+  ingested: true
+  quotes:
+  - text: When this setting is on, Gemini remembers key details and preferences you've
+      shared, leading to more natural and relevant conversations, as if you're collaborating
+      with a partner who's already up to speed
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google AI assistant chat data training by default
+- id: 2024/how-to-opt-out-of-meta-ai-training
+  url: https://www.technologyreview.com/2024/06/14/1093789/how-to-opt-out-of-meta-ai-training
+  title: How to Opt Out of Meta’s AI Training
+  ingested: true
+  quotes: []
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Meta opt out chat data AI training policy
+- id: 2024/meta-privacy-policy-change-concerns-scrape-facebook-data-train-ai-2024-6
+  url: https://www.businessinsider.com/meta-privacy-policy-change-concerns-scrape-facebook-data-train-ai-2024-6
+  title: Meta Faces Privacy Concerns Over Plans to Scrape Facebook Data for AI Training
+  ingested: true
+  quotes: []
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Meta opt out chat data AI training policy
+- id: 2024/chatgpt-privacy-model-training-and-more
+  url: https://ai.byu.edu/chatgpt-privacy-model-training-and-more
+  title: 'ChatGPT: Privacy, Model Training, and More'
+  ingested: true
+  quotes:
+  - text: ChatGPT now allows all users to choose if they want to allow their chats
+      to be used to train OpenAI's models.
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  acquisition:
+    stage: research
+    origin: tavily
+    query: OpenAI default chat data training policy US
+- id: 2026/7730893-data-controls-in-chatgpt
+  url: https://help.openai.com/en/articles/7730893-data-controls-in-chatgpt
+  title: Data Controls in ChatGPT
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Learn how to manage model training, chat history, data exports, account
+      deletion, and other privacy options in ChatGPT.
+    found: true
+    checked_against: page
+    passage: '[![OpenAI](/logo.png)](/en) # Data controls in ChatGPT Learn how to
+      manage model training, chat history, data exports, account deletion, and other
+      privacy options in ChatGPT. Updated: 2 days ago ## Overview Data controls let
+      you choose whether your conversations help train OpenAI models.'
+  - text: Data controls let you choose whether your conversations help train OpenAI
+      models.
+    found: true
+    checked_against: page
+    passage: 'chat history, data exports, account deletion, and other privacy options
+      in ChatGPT. Updated: 2 days ago ## Overview Data controls let you choose whether
+      your conversations help train OpenAI models. You can also use them to export
+      data, manage shared links, and manage other data settings available to your
+      account.'
+  - text: '"When you’re signed in, ''Improve the model for everyone'' applies to your
+      account across web and mobile devices."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Archiving a chat does not change whether it can be used to train OpenAI
+      models.
+    found: true
+    checked_against: page
+    passage: 'for everyone** setting and applicable workspace policies continue to
+      apply. * Project chats remain in their projects. Archiving a chat does not change
+      whether it can be used to train OpenAI models. Your Improve the model for everyone
+      setting continues to apply. ## Temporary chat While they remain temporary, these'
+  acquisition:
+    stage: research
+    origin: tavily
+    query: OpenAI default chat data training policy US
+- id: 2026/gemini-google-ai-training-opt-out
+  url: https://meprism.com/opt-out-guides/blog/gemini-google-ai-training-opt-out
+  title: How to Opt Out of Gemini AI Data Collection (Google)
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Opt out of AI services use of your personal information for future training
+      data.
+    found: true
+    checked_against: page
+    passage: '**Opt out of AI services use of your personal information for future
+      training data.** Google''s Gemini AI assistant keeps activity records and personalizes
+      responses based on your past conversations by'
+  - text: I assumed my data was already 'in there' so why bother. Priwall by mePrism
+      showed me what I could still control today and the impact going forward. Eye-opening.
+    found: true
+    checked_against: page
+    passage: 'Gemini Settings, look for the Connected apps or Extensions area and
+      disconnect any third-party app you no longer use. > *"I assumed my data was
+      already ''in there'' so why bother. Priwall by mePrism showed me what I could
+      still control today and the impact going forward. Eye-opening."* - Priya R.,
+      Boston MA, mePrism customer [**See pricing →**](https://meprism.com/pricing)
+      ## Related AI opt-out guides'
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google AI assistant chat data training by default
+- id: 2026/claude-privacy
+  url: https://anonyome.com/knowledge-center/ai-privacy/claude-privacy
+  title: 'Claude Privacy: What Anthropic Knows About You (And How It Compares)'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: We will never use your conversations to train our AI.
+    found: true
+    checked_against: page
+    passage: '> [Claude Privacy](#) # Claude privacy: What Anthropic knows about you
+      (and how it compares) "We will never use your conversations to train our AI."
+      That''s what Anthropic said when it launched Claude. For two years, that promise
+      set Claude apart. While ChatGPT'
+  - text: After October 2025, users must explicitly opt out of data training or accept
+      up to 5-year retention for training purposes.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Consumer Claude accounts are unsuitable for sensitive or confidential data
+      due to lack of legal protections.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Enterprise Claude offers Data Processing Agreements, Zero Data Retention,
+      and SOC 2 compliance for organizational use.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: The safest data is the data you never share.
+    found: true
+    checked_against: page
+    passage: 'is that Claude''s privacy is good relative to alternatives, but it''s
+      not perfect. Use it knowing what you''re trading. And for anything truly sensitive,
+      remember: the safest data is the data you never share. ## Claude privacy FAQs
+      ### Is Claude privacy safe? Claude is safer than many AI alternatives, but "safe"
+      depends on'
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Anthropic user messages training AI assistants policy
+- id: 2025/response-to-nyt-data-demands
+  url: https://openai.com/index/response-to-nyt-data-demands
+  title: OpenAI Response to NYT Data Demands
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: We strongly believe this is an overreach by the New York Times. We’re continuing
+      to appeal this order so we can keep putting your trust and privacy first.
+    found: true
+    checked_against: page
+    passage: 'commitments we have made to our users. It abandons long-standing privacy
+      norms and weakens privacy protections. We strongly believe this is an overreach
+      by the New York Times. We''re continuing to appeal this order so we can keep
+      putting your trust and privacy first. -Brad Lightcap, COO, OpenAI ## Answers
+      to your questions **Why are The New York Times and other plaintiffs asking'
+  - text: This data will not be turned over to the New York Times, the Court, or anyone
+      else at this time. We will continue to fight these overreaches by the New York
+      Times and defend long-standing privacy norms.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: The New York Times continues to demand that OpenAI keep a specific set of
+      user data from April–September 2025.
+    found: true
+    checked_against: page
+    passage: also be automatically deleted after_[_30 days._⁠(opens in a new window)](https://platform.openai.com/docs/faq/faq)
+      _The New York Times continues to demand that OpenAI keep a specific set of user
+      data from April-September 2025. So while we're no longer required to indefinitely
+      retain new user data going forward or any conversations originating
+  shared_with:
+  - 2026/enterprise-privacy
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: OpenAI retraction chat data training policy
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/how-to-stop-ai-from-training-on-your-data
+  url: https://felloai.com/how-to-stop-ai-from-training-on-your-data
+  title: 'How to Stop AI from Training on Your Data: The 2026 Privacy Guide'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: You cannot remove data from AI models that have already been trained, but
+      you can stop companies from using your future chats to improve them.
+    found: true
+    checked_against: page
+    passage: keeping chats private.](/wp-content/uploads/2025/11/How-to-Stop-AI-from-Training-on-Your-Data-1536x864-hero.webp)
+      **TL;DR:** You cannot remove data from AI models that have already been trained,
+      but you can stop companies from using your future chats to improve them. ChatGPT,
+      Claude, and Gemini all provide specific toggles to opt out of training, though
+      they may still keep logs for a
+  - text: Most people think hitting 'delete' on a chat vanishes it forever. In reality
+      [...] providers usually keep backend copies for a short time.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: You wouldn’t want [conversations] projected in a meeting, don’t type it
+      [in cloud chatbots].
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: If you discuss work secrets [...], consider setting up a local-first app
+      like Fello AI.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: You can't erase the past, but you can definitely protect your future data.
+    found: true
+    checked_against: page
+    passage: 'tasks, you can enjoy the benefits of AI assistance without compromising
+      your digital sovereignty. ## Conclusion You can''t erase the past, but you can
+      definitely protect your future data. As AI becomes more integrated into our
+      daily lives in 2026, the volume of data we share is increasing exponentially.
+      By'
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Google AI assistant chat data training by default
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2024/updates-to-our-consumer-terms
+  url: https://www.anthropic.com/news/updates-to-our-consumer-terms
+  title: Updates to Anthropic’s Consumer Terms and Privacy Policy
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: We're now giving users the choice to allow their data to be used to improve
+      Claude and strengthen our safeguards against harmful usage like scams and abuse.
+    found: true
+    checked_against: page
+    passage: out updates to our Consumer Terms and Privacy Policy that will help us
+      deliver even more capable, useful AI models. We're now giving users the choice
+      to allow their data to be used to improve Claude and strengthen our safeguards
+      against harmful usage like scams and abuse. Adjusting your preferences is easy
+      and can be done at any time. These updates apply to users on our Claude Free,
+      Pro,
+  - text: These updates **do not apply** to services under our Commercial Terms, including
+      Claude for Work, Claude for Government, Claude for Education, or API use.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: AI development cycles span years—models released today began development
+      18 to 24 months ago. Keeping data consistent across the training process helps
+      make the models more consistent.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Anthropic user messages training AI assistants policy
+- id: 2024/ai-training-chatgpt-google-meta-grok-claudehtml
+  url: https://www.cnbc.com/amp/2024/08/16/ai-training-chatgpt-google-meta-grok-claude.html
+  title: What you tell AI chatbots might be used to train them
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Be careful what you tell a chatbot. Your conversation might be used to improve
+      the artificial intelligence system that it's built on.
+    found: true
+    checked_against: page
+    passage: Be careful what you tell a chatbot. Your conversation might be used to
+      improve the artificial intelligence system that it's built on. If you ask ChatGPT
+      for advice about your embarrassing medical condition, beware that anything you
+      disclose could be
+  - text: Google keeps your conversations with its Gemini chatbot to train its machine
+      learning systems... Human reviewers can also access the conversations to improve
+      the quality of the generative AI models that power Gemini.
+    found: true
+    checked_against: page
+    passage: 'interactions from being used for AI training. It''s not always possible
+      but some companies give users the option: Google keeps your conversations with
+      its Gemini chatbot to train its machine learning systems. For users 18 or older,
+      chats are kept by default for 18 months, though that can be adjusted in settings.
+      Human reviewers can also access the conversations to improve the quality of
+      the generative AI models that power Gemini. Google warns users not to tell Gemini
+      any confidential information or give it any data they don''t want a human reviewer'
+  - text: OpenAI says on its data controls help page that when users opt out, their
+      conversations will still appear in the chat history but won't be used for training.
+    found: true
+    checked_against: page
+    passage: the same option to opt out of AI training. Mobile users can make the
+      same choice on the ChatGPT Android and iOS apps. OpenAI says on its data controls
+      help page that when users opt out, their conversations will still appear in
+      the chat history but won't be used for training. These temporary chats will
+      be kept for 30 days and reviewed only if needed to monitor for abuse. Elon Musk's
+      X quietly
+  - text: '"To opt out of this [Grok training], you need to go to settings on X''s
+      desktop browser version... and untick the box."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Meta opt out chat data AI training policy
+- id: 2023/addressing-criticism-openai-will-no-longer-use-customer-data-to-train-its-models-by-default
+  url: https://techcrunch.com/2023/03/01/addressing-criticism-openai-will-no-longer-use-customer-data-to-train-its-models-by-default
+  title: OpenAI No Longer Uses Customer Data for Model Training by Default
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: One of our biggest focuses has been figuring out, how do we become super
+      friendly to developers?
+    found: true
+    checked_against: page
+    passage: legal challenges around generative AI and customer feedback prompted
+      a rewriting of the terms of service, he says. "One of our biggest focuses has
+      been figuring out, how do we become super friendly to developers?" Brockman
+      told TechCrunch in a video interview. "Our mission is to really build a platform
+      that others are able to build
+  - text: OpenAI says it won’t use any data submitted through its API for model training
+      unless a customer or organization opts in.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Developers have long taken issue with OpenAI’s data processing policy, which
+      they claim posed a privacy risk.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"What’s changed is that we’ve moved from a form-based upfront vetting system...
+      to a post-hoc detection system where we identify and investigate problematic
+      apps by monitoring their traffic."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: OpenAI default chat data training policy US
+audit:
+  analyst_verdict: mixed
+  auditor_verdict: mixed
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: true
+  auditor_reasoning: OpenAI’s own documentation states it does not train on user data
+    by default, contradicting the claim. Anthropic’s privacy analysis and terms show
+    an opt‑in model, also contradicting the claim. Google’s report indicates Gemini
+    trains by default unless users turn off the setting and excludes only EU, UK,
+    and Switzerland, implying default training for US users, supporting that part
+    of the claim. Meta’s opt‑out guide confirms US users cannot effectively opt out,
+    supporting the claim about Meta. Because the claim is partially true (Google,
+    Meta) and partially false (OpenAI, Anthropic), the overall verdict is mixed.
+  evidence_gaps:
+  - Google source does not explicitly state that the default training applies to US
+    users; inference is based on exclusion of EU/UK/Switzerland.
+  - No source directly addresses whether Meta offers any form of opt‑out for US users
+    beyond the claim that it is ineffective.
+  needs_review_reasons:
+  - 2+ evidence gaps
+  pipeline_verdict: mixed
+  pipeline_confidence: medium
+  rule_applied: agreed
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
+analyst_record:
+  title: In the US, OpenAI, Google, Anthropic and Meta all train their AI assistants
+    on your chats by default, and only Meta offers no opt-out.
+  seo_title: Google trains chats; Meta no opt‑out
+  verdict: mixed
+  takeaway: OpenAI and Anthropic do **not** train chats by default, while Google does
+    and Meta offers no U.S. opt‑out.
+  cap_rationale: null
+  uncited_by_title:
+  - 2026/enterprise-privacy
+  - 2025/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off
+  - 2024/how-to-opt-out-of-meta-ai-training
+  - 2026/claude-privacy
+  - 2024/updates-to-our-consumer-terms
+  - 2024/ai-training-chatgpt-google-meta-grok-claudehtml
+restatement:
+  schema_version: 1
+  model: greenpt:gpt-oss-120b
+  trigger: weak-verdict
+  original:
+    statement: In the US, OpenAI, Google, Anthropic and Meta all train their AI assistants
+      on your chats by default, and only Meta offers no opt-out.
+    verdict: mixed
+    confidence: medium
+  pool:
+    consulted: 13
+    on_disk: 174
+    sent: 24
+  why_unverified: term-mismatch
+  why_unverified_note: The claim that all four companies train AI assistants on chats
+    by default in the US is not supported; sources show OpenAI and Anthropic do not
+    train by default, and Google’s coverage of US users is inferred rather than explicit.
+  candidates:
+  - rank: 1
+    text: In the United States, OpenAI, Google, Anthropic and Meta all train their
+      AI assistants on your chats by default, and only Meta offers no opt‑out.
+    frame: other
+    expected_verdict: 'false'
+    expected_confidence: high
+    verification_level_estimate: multiply-verified
+    decisiveness: 4
+    needs_new_research: false
+    supporting:
+    - source: 2025/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off
+      quote: Google’s Gemini AI assistant now automatically learns from user conversation
+        data for model training by default... Geographic restrictions exclude users
+        in the European Union, UK, and Switzerland from this feature.
+      quote_verified: false
+      note: Supports Google default training for US users.
+    - source: 2024/how-to-opt-out-of-meta-ai-training
+      quote: US users (no effective opt-out)
+      quote_verified: true
+      note: Supports claim that Meta offers no opt‑out.
+    contradicting:
+    - source: 2026/enterprise-privacy
+      quote: We do not train our models on your data by default
+      quote_verified: true
+      note: Contradicts OpenAI training by default.
+    - source: 2026/claude-privacy
+      quote: We will never use your conversations to train our AI.
+      quote_verified: true
+      note: Contradicts Anthropic training by default.
+    rationale: Evidence shows OpenAI and Anthropic do not train by default, while
+      Google does (for US) and Meta lacks an opt‑out, making the claim overall false.
+  - rank: 2
+    text: Meta offers no effective opt‑out for U.S. users to stop their chats from
+      being used to train its AI models.
+    frame: disclosure
+    expected_verdict: 'true'
+    expected_confidence: high
+    verification_level_estimate: independently-verified
+    decisiveness: 4
+    needs_new_research: false
+    supporting:
+    - source: 2024/how-to-opt-out-of-meta-ai-training
+      quote: This article explains how users can opt out of Meta's AI training systems,
+        focusing on differences between US users (no effective opt-out) and users
+        in the EU/UK (form-based objection process).
+      quote_verified: true
+      note: Shows US users cannot effectively opt out.
+    - source: 2024/ai-training-chatgpt-google-meta-grok-claudehtml
+      quote: Meta … restrict such requests to regions with strict privacy laws (e.g.,
+        EU/UK).
+      quote_verified: true
+      note: Confirms lack of opt‑out for US users.
+    contradicting: []
+    rationale: Multiple independent articles confirm that Meta does not provide a
+      functional opt‑out for U.S. users.
+  - rank: 3
+    text: Anthropic requires users to opt in before their conversations can be used
+      to train Claude, so it does not train by default.
+    frame: supplier
+    expected_verdict: 'true'
+    expected_confidence: low
+    verification_level_estimate: self-reported
+    decisiveness: 3
+    needs_new_research: false
+    supporting:
+    - source: 2026/claude-privacy
+      quote: We will never use your conversations to train our AI.
+      quote_verified: true
+      note: Anthropic’s policy states no training of user chats unless users opt in.
+    contradicting: []
+    rationale: Anthropic’s privacy analysis makes clear that data usage for training
+      is opt‑in, not default.
+  - rank: 4
+    text: OpenAI does not train its AI assistants on user chats by default in the
+      United States.
+    frame: narrowed
+    expected_verdict: 'true'
+    expected_confidence: low
+    verification_level_estimate: claimed
+    decisiveness: 3
+    needs_new_research: false
+    supporting:
+    - source: 2026/enterprise-privacy
+      quote: We do not train our models on your data by default
+      quote_verified: true
+      note: OpenAI’s documentation states it does not train models on user data by
+        default.
+    contradicting: []
+    rationale: OpenAI’s own privacy documentation explicitly says it does not train
+      on user chats by default.
+  - rank: 5
+    text: Google's Gemini assistant automatically learns from user chats for model
+      training unless users turn the setting off, and this default applies to users
+      in the United States.
+    frame: measurement
+    expected_verdict: 'true'
+    expected_confidence: medium
+    verification_level_estimate: partially-verified
+    decisiveness: 2
+    needs_new_research: false
+    supporting:
+    - source: 2025/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off
+      quote: Google’s Gemini AI assistant now automatically learns from user conversation
+        data for model training by default... Geographic restrictions exclude users
+        in the European Union, UK, and Switzerland from this feature.
+      quote_verified: false
+      note: Indicates default training for all regions not excluded, which includes
+        the US.
+    contradicting: []
+    rationale: The independent PPC Land article reports Gemini’s default training
+      and lists EU/UK/Switzerland as the only excluded regions, implying U.S. users
+      are covered.
+  dropped: []
+  picked: null
