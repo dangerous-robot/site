@@ -1,6 +1,6 @@
 # Research content: principles, queue and scouting
 
-**Status**: Approved 2026-11-08; first queue run 2026-11-08 and 2026-11-09, budget spent; awaiting Brandon's walkthrough; rank 10 held for a pipeline fix; the homepage FLI claim's source refresh is RE-BS (FLI claim sources move to the Summer 2026 index) on beta.11  
+**Status**: Approved 2026-11-08; first queue run 2026-11-08 and 2026-11-09, budget spent; walkthrough done 2026-11-17 (agent interview); rank 10 held for a pipeline fix; the homepage FLI claim's source refresh is RE-BS (FLI claim sources move to the Summer 2026 index) on beta.11  
 **Stream**: research content (claims, sources, drafts, rechecks). Not the site, not the pipeline code.  
 **Home**: `docs/research-content.md`, beside `priorities.md`; the dated decisions are in `docs/decisions.md` under 2026-11-08.
 
@@ -65,20 +65,19 @@ Rules:
 - A row is added when a change is first planned, before any paid run, and names who does the next step and whether it is a paid run.
 - State is one of: planned, in progress, waiting on Brandon, ready to publish, approved not yet live, held, draft report, untracked. "Held" names its blocker; a held row that blocks a beta says so.
 - A row drops off when the beta that carries it is tagged; git history and the records under § Why each change was made keep it after that.
-- No new Elephant candidates are added until Brandon's walkthrough of ranks 1 to 10 is done (Brandon, 2026-11-17).
 
 | Group | Claim | Change | Why | State | Blocker or next step | Target beta |
 |---|---|---|---|---|---|---|
 | Homepage | Using generative AI harms cognitive ability (`subjects/generative-ai/using-generative-ai-harms-cognitive-ability`) | recheck | scheduled recheck; as_of 2026-11-07, confidence medium to high | approved not yet live | none | beta.10 |
 | Homepage | None of the major AI model producers score above D+ on existential safety in the latest FLI AI Safety Index (`subjects/ai-model-producers/ai-producers-existential-score`) | reword and recheck | the sentence now says "the latest FLI index" while its sources are the 2025 edition; the Summer 2026 index is out | planned | RE-BS (FLI claim sources move to the Summer 2026 index): pipeline fix for the 2026-11-17 misread, then a paid rerun (Brandon's budget OK). The live claim ships unchanged in beta.10; FLI's own 2026 table gives D+ at most, so the sentence holds | beta.11 |
-| Responsible AI page | Earthly Insight renewable-energy hosting, second version (`research/pending/earthly-insight/renewable-energy-hosting.md`) | recheck | rerun of the published claim, as_of 2026-10-14, verdict unverified | waiting on Brandon | sign-off or delete at the terminal | the beta after sign-off |
+| Responsible AI page | Earthly Insight renewable-energy hosting (`earthly-insight/renewable-energy-hosting`) | recheck | rerun of the published claim; verdict unchanged, unverified | approved not yet live | none; next recheck should check the Green Web Directory listing | beta.10 |
 | Responsible AI page | Rows with a criterion and no claims: real-time energy display, no image generation, ownership structure | new claims | the cells rest on sources only | planned | not scheduled; product-comparison claims keep their own slow track | none |
-| Elephant | Ranks 2, 3, 4 (three product claims), 5, 6, 8 and 9 | new claims | § Elephant ranked queue | waiting on Brandon | his walkthrough sign-off | beta.10 if signed off before it ships |
+| Elephant | Ranks 2, 3, 4 (ChatGPT only), 5, 6, 8 and 9, plus the inference-over-training reserve | new claims | § Elephant ranked queue; the reserve approved by Brandon 2026-11-17 | approved not yet live | none | beta.10 |
+| Elephant | Rank 4, Gemini and Meta AI no-training claims | new claims | Gemini: the consumer default rests on one article whose key quote was not found; Meta AI: 1 of 13 cited quotes found | held | a recheck that cites first-party consumer policies (Meta's training-data page) | none yet |
 | Elephant | Rank 1, "100% renewable" means certificates | new claim | § Elephant ranked queue | held | RE-BM (Tie-broken claims get a matching narrative) | beta.11 |
-| Elephant | Rank 7, a third of a watt-hour per prompt | new claim | counter-thesis, case by case | waiting on Brandon | rerun as rewritten (paid) or archive | none yet |
+| Elephant | Rank 7, a third of a watt-hour per prompt | new claim | mixed only because no source states the LED-bulb arithmetic | waiting on Brandon | restatement #2 (Gemini 0.24 Wh) chosen 2026-11-17; the `r` pick is not recorded yet, then a paid `dr draft --restates` run | none yet |
 | Elephant | Rank 10, the four US labs train on your chats by default | new claim | § Elephant ranked queue | held | analyst instruction fix (pipeline stream), then one paid rerun | none yet |
-| Elephant | Superseded drafts: the 2026-10-14 drafts behind ranks 1 and 9, the two earlier rank 8 wordings, the rank 10 first run | delete | replaced by the ranked wordings | waiting on Brandon | `d` in the walkthrough | none |
-| Elephant | Reserves and the § Triage of the eight subject drafts holds and archives | new claims or archive | § Triage of the eight subject drafts | planned | the walkthrough, then a new paid-run budget | none yet |
+| Elephant | Reserves and held drafts: ten times a web search (reframe around the outdated figure), fewer than 10 certified data centers (replace with the reserve rewrite) | new claims or archive | § Triage of the eight subject drafts | planned | a new paid-run budget | none yet |
 | Other | Microsoft AI humanist code of conduct critique (`research/reports/2026-11-03-microsoft-ai-humanist-code-of-conduct.md`) and `research/reports/README.md` | new report | adversarial review | draft report | Brandon's read; files untracked | none |
 | Other | Four Summer 2026 FLI AI Safety Index sources (`research/sources/2026/ai-safety-index-*.md`, `the-2026-ai-safety-index-nine-ai.md`) | new sources | needed by the homepage FLI claim's rerun | untracked | commit with that rerun | beta.11 |
 
