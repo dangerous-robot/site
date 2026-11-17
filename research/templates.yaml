@@ -168,6 +168,13 @@ templates:
     topics: [environmental-impact]
     core: false
 
+  - slug: gemini-prompt-electricity
+    text: Gemini uses about 0.24 watt-hours of electricity per typical text prompt.
+    entity_type: subject
+    subjects: [subjects/generative-ai]
+    topics: [environmental-impact]
+    core: false
+
 # Deferred and retired criteria (the company block is retired: companies are not a claim target).
 # To reactivate, move entries back into `templates` above.
 # Neither the Python pipeline nor the Astro loader reads this key.

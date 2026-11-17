@@ -821,4 +821,4 @@ restatement:
     rationale: Tech Insider reports ChatGPT uses about 42 % more energy than Gemini’s
       0.24 Wh, leading to an estimated 0.34 Wh per prompt.
   dropped: []
-  picked: null
+  picked: 2
