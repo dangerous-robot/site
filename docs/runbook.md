@@ -279,7 +279,7 @@ git diff --stat "$last"..HEAD -- research pipeline src/pages/research
 | Beta release | `1.0.0-beta.N`, the next whole number | The push carries any research change: anything under `research/`, `pipeline/` or `src/pages/research/`, `scripts/scheduled-recheck.sh` or `.github/workflows/recheck.yml` (they run the pipeline), or a change to the claims or verdicts a normal page shows (Responsible AI chatbots, the homepage claim cards). It ships everything on `main`. |
 | Site push | `1.0.0-beta.N.1`, then `.2` | Nothing but site files changed since the last tag: normal pages (copy and layout), writing posts, petitions, styles, site code, docs and tooling. |
 
-Unsure which: it is a beta release. A site page that is ready while `main` holds research or pipeline work waits for that beta, or the beta ships now with everything. No script checks the kind today (the tag check accepts any version); the agent checks it and names the files that decided it.
+Unsure which: it is a beta release. A site page that is ready while `main` holds research or pipeline work waits for that beta, or the beta ships now with everything. The tag check in the deploy (`scripts/check-release-tag.sh`) refuses a four-part version when a research file changed since the tag it follows, and lists those files. Before the push, the agent checks the same thing and names the files that decided it.
 
 ### Checks before the push
 

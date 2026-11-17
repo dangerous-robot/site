@@ -167,7 +167,7 @@ The browser test `tests/e2e/petition-qr.spec.ts` decodes the QR code on the peti
 
 ## Release Tag Check
 
-`bash scripts/check-release-tag.sh <commit>` runs first in the deploy `build` job against the pushed commit. Every push of `main` is a tagged release, either a beta release or a site push (`docs/runbook.md` § Releasing), and this step enforces the tag: the build fails unless the tag `v<first line of VERSION.md>` points at that commit and the active roadmap (the `Active release:` line of `VERSION.md`) has a Releases row for that version. The runner's checkout is shallow, so the script fetches that one tag over https before checking. The failure message prints the bump-and-tag steps. Run it locally with no argument to check `HEAD`; it exits 1 on an untagged commit. The script accepts any version string; it does not check whether the push should be a beta release or a site push. See `docs/runbook.md` § Releasing.
+`bash scripts/check-release-tag.sh <commit>` runs first in the deploy `build` job against the pushed commit. Every push of `main` is a tagged release, either a beta release or a site push (`docs/runbook.md` § Releasing), and this step enforces the tag: the build fails unless the tag `v<first line of VERSION.md>` points at that commit and the active roadmap (the `Active release:` line of `VERSION.md`) has a Releases row for that version. The runner's checkout is shallow, so the script fetches that one tag over https before checking. The failure message prints the bump-and-tag steps. Run it locally with no argument to check `HEAD`; it exits 1 on an untagged commit. For a four-part version (a site push, `beta.N.M`) it also compares the commit with the tag it follows (`beta.N.(M-1)`, or `beta.N` when M is 1; fetched the same way) and fails when any research file changed: anything under `research/`, `pipeline/` or `src/pages/research/`, `scripts/scheduled-recheck.sh` or `.github/workflows/recheck.yml`. The failure lists the files (the first 20). A beta version skips this check. Tests: `pipeline/tests/test_check_release_tag.py`. See `docs/runbook.md` § Releasing.
 
 ## Citation Integrity
 
@@ -222,7 +222,7 @@ All other `markdownlint` defaults are enforced.
 | `check:types`      | `astro check`                                        | Type-check the site                              |
 | `check:watch`      | `tsx scripts/check-watch-page.ts`                    | Check `/watch` in `dist/` and scan for key leaks |
 | `check:flyers`     | `tsx scripts/check-flyers.ts`                        | Check petition flyer PDFs and links against `dist/` |
-| (deploy only)      | `bash scripts/check-release-tag.sh <commit>`         | Refuse an untagged deploy: tag `v<VERSION.md>` at the commit, Releases row present |
+| (deploy only)      | `bash scripts/check-release-tag.sh <commit>`         | Refuse an untagged deploy: tag `v<VERSION.md>` at the commit, Releases row present; a site push with research changes |
 | `test:site`        | `tsx --test 'src/lib/**/*.test.ts'`                  | Unit tests                                       |
 | `test:e2e`         | `playwright test`                                    | `/watch` browser tests and the petition QR decode test (Chromium, fixture build) |
 | `check`            | `npm run check:types && npm run test:site && npm run build && npm run lint:md && npm run check:citations && npm run check:reviewers && npm run check:watch && npm run check:flyers` | Run the full local quality gate (CI's `check` job runs all but check:reviewers) |
