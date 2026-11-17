@@ -176,7 +176,12 @@ uv run dr review --claim ecosia-ai/renewable-energy-hosting
 
 The five commands are `dr draft`, `dr recheck`, `dr review`, `dr findings` and `dr lint`. `dr draft --dry-run` makes no model or search call and writes nothing: it runs the checks that would refuse the real run and prints what that run would do. `dr draft --paid-dry-run` runs the paid loop and writes nothing. Their flags, what each writes, which can ask archive.org to capture a page, and the run rules are in `docs/architecture/pipeline-commands.md`; `dr <command> --help` has examples.
 
-Agents: do not run the `dr review` walkthrough or a sign-off, do not wrap them in a pty (`script`, `expect`, Python `pty`) and do not edit a sidecar's `human_review` by hand. Every sign-off needs a person at a terminal (stdin must be a tty and the claim slug is typed back before anything is written), so a piped command cannot sign off; a sign-off is Brandon's. `dr review --format text|json` is read-only and safe for an agent.
+A draft walkthrough is done one of two ways, and a sign-off is Brandon's in both:
+
+- **Manual.** Brandon runs `uv run dr review` at his terminal.
+- **Interview.** In a session with Brandon present, an agent takes the drafts one at a time. For each it shows the claim, the verdict and confidence, the cited sources and its own recommendation, then asks for his decision and waits. It then prints the exact command that carries out that decision (`dr review --claim REF --approve`, `--archive`, a `dr draft --criterion` step), and Brandon runs it at his terminal.
+
+Agents never sign off unattended: do not run the `dr review` walkthrough or a sign-off command, do not wrap them in a pty (`script`, `expect`, Python `pty`), do not edit a sidecar's `human_review` by hand, and do not hand over a filled-in answer sheet for Brandon to press through. Every sign-off needs a person at a terminal (stdin must be a tty and the claim slug is typed back before anything is written), so a piped command cannot sign off. `dr review --format text|json` is read-only and safe for an agent; an interview uses it to show each draft.
 
 With the venv activated (`source .venv/bin/activate`), the `uv run` prefix is optional.
 

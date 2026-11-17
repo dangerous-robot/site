@@ -239,7 +239,7 @@ Five commands do all the work; `docs/architecture/pipeline-commands.md` has ever
 | Draft a claim | `uv run dr draft --entity products/<slug> "<sentence>"`, or `--criterion <slug> --entity <ref>`, or `--subject <slug> "<sentence>"`; add `--dry-run` for a free check (no model or search call, nothing written) |
 | Rerun one agent over a claim's stored sources | `uv run dr draft --claim <ref> --rerun analyst` or `--rerun evaluator` |
 | Recheck a published claim | `uv run dr recheck --claim <ref>` or `--due` (see Refreshing a published claim) |
-| Sign off | `uv run dr review` at a terminal |
+| Sign off | `uv run dr review` at a terminal, or an agent interview where Brandon runs each printed command (AGENTS.md § Tooling: dr vs inv) |
 | Triage what went wrong | `uv run dr findings` |
 | Check the content tree | `uv run dr lint` |
 

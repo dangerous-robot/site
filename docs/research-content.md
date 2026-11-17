@@ -146,7 +146,7 @@ Releases: a new or changed published claim goes live only with a beta release (`
 
 ## Left to the builder
 
-- Archiving or deleting a draft is a sign-off action (the walkthrough's `d`; `dr review --claim REF --archive` for a published claim), so it is Brandon's. The replacement is `dr draft --subject <slug> "<sentence>"`, which searches and ingests afresh and does not need the old draft's sources.
+- Archiving or deleting a draft is a sign-off action (the walkthrough's `d`; `dr review --claim REF --archive` for a published claim), so it is Brandon's. The walkthrough is manual or an agent interview (AGENTS.md § Tooling: dr vs inv). The replacement is `dr draft --subject <slug> "<sentence>"`, which searches and ingests afresh and does not need the old draft's sources.
 - The scouting skill or prompt, once Brandon picks the form.
 - A `--seed <url>` option for `dr draft`, if wanted, belongs to the pipeline stream and is not designed here.
 
