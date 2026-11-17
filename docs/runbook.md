@@ -309,6 +309,8 @@ bash scripts/check-release-tag.sh   # passes once the tag is on HEAD
 git push --atomic origin main v1.0.0-beta.N
 ```
 
+The pre-push hook (`scripts/git-hooks/pre-push`) runs the same check on any push to `main` and stops the push when it fails; it also refuses a push of a commit other than HEAD, because the check reads `VERSION.md` from the working tree. Install it once per checkout with `inv install-hooks`, which also links the pre-commit hook when none is installed.
+
 If `main` reaches `origin` without a tag on its newest commit, the deploy fails at its first build step and the live site keeps the previous release. The Monday rebuild fails the same way until it is fixed. To fix it: if `VERSION.md` already names a version with no tag, tag that commit and push the tag; if `VERSION.md` was not bumped (its tag sits on an older commit), bump it, add the Releases row, commit, tag and push. Then rerun the deploy from the Actions tab or with `gh workflow run deploy.yml --ref main`.
 
 ## Separate agent credentials (OPS-K)

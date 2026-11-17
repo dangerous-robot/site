@@ -117,3 +117,56 @@ def test_untagged_commit_still_fails(repo: Repo) -> None:
     result = repo.check()
     assert result.returncode == 1
     assert "not at the commit being deployed" in result.stdout
+
+
+# --- scripts/git-hooks/pre-push (OPS-BP) ---
+
+HOOK = SCRIPT.parent / "git-hooks" / "pre-push"
+
+
+@pytest.fixture
+def pushable(repo: Repo, tmp_path: Path) -> Repo:
+    remote = tmp_path.parent / f"{tmp_path.name}-origin.git"
+    subprocess.run(["git", "init", "-q", "--bare", str(remote)], check=True)
+    git(repo.root, "remote", "add", "origin", str(remote))
+    hook = repo.root / ".git" / "hooks" / "pre-push"
+    shutil.copy(HOOK, hook)
+    hook.chmod(0o755)
+    return repo
+
+
+def push(repo: Repo, *refs: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", "push", "--atomic", "origin", *refs],
+        cwd=repo.root, capture_output=True, text=True,
+    )
+
+
+def test_hook_lets_a_tagged_push_through(pushable: Repo) -> None:
+    result = push(pushable, "main", "v1.0.0-beta.9")
+    assert result.returncode == 0, result.stderr
+    assert "release check" in result.stdout + result.stderr
+
+
+def test_hook_refuses_an_untagged_push(pushable: Repo) -> None:
+    write(pushable.root, "src/pages/about.astro", "later\n")
+    git(pushable.root, "commit", "-qam", "untagged")
+    result = push(pushable, "main")
+    assert result.returncode != 0
+    assert "not at the commit being deployed" in result.stdout + result.stderr
+
+
+def test_hook_refuses_a_site_push_over_research(pushable: Repo) -> None:
+    pushable.release("1.0.0-beta.9.1", ["research/claims/a.md"])
+    result = push(pushable, "main", "v1.0.0-beta.9.1")
+    assert result.returncode != 0
+    assert "research/claims/a.md" in result.stdout + result.stderr
+
+
+def test_hook_ignores_other_branches(pushable: Repo) -> None:
+    git(pushable.root, "checkout", "-q", "-b", "scratch")
+    write(pushable.root, "notes.md", "x\n")
+    git(pushable.root, "add", "notes.md")
+    git(pushable.root, "commit", "-qm", "scratch")
+    result = push(pushable, "scratch")
+    assert result.returncode == 0, result.stderr
