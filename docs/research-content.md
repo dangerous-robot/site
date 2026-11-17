@@ -112,7 +112,7 @@ Weak outcomes are normal: the pipeline writes `mixed` and `unverified` verdicts 
 
 Budget: 14 paid runs for this queue (11 planned, 3 for restatements; Brandon approved 12 for the nine-run shape, raised by two with the three product claims). Done: ten published, or the budget spent, whichever comes first; a shortfall is reported, not chased. Spent: 14 of 14 as of 2026-11-09: nine runs on 2026-11-08; on 2026-11-09 the Gemini analyst and Evaluator reruns (counted together as one run), the rank 8 floor run, the rank 10 combined claim, the rank 8 short-sentence rerun, and the rank 10 rerun without the Meta clause (seeded; two source ingests outside the run count).
 
-Releases: claims publish with whatever beta ships next, as the site does today; no claim gets its own release. A claim waits at most one beta between approval and the site.
+Releases: a new or changed published claim goes live only with a beta release (`1.0.0-beta.N`), never with a site push (`runbook.md` § Releasing); no claim gets its own release. A claim waits at most one beta between approval and the site.
 
 ## Left to the builder
 

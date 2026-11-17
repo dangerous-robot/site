@@ -27,6 +27,8 @@ Keep each session's running note in `handoff/` at the repo root (git-ignored), n
 
 - Never push to `origin` without Brandon's explicit approval for that push; earlier approval in a session does not carry over. Local commits are fine. The same goes for other remote-affecting actions (remote branch deletion, PRs, tags).
 - Every push of `main` is a tagged release: bump `VERSION.md`, add the roadmap Releases row, tag `v<version>`, push branch and tag together (`docs/runbook.md` § Releasing). The deploy refuses an untagged commit.
+- Two kinds of push. A push that carries any research, pipeline or claim change is a beta release: next `beta.N`, full checks. A site push (`beta.N.1`) is allowed only when nothing but site files changed since the last tag. Before either, list the commits since the last tag by stream (site, research pipeline, research content) and get Brandon's yes.
+- Push back, out loud, when a request would add unscheduled work to the beta in progress, ship research content without a beta number, or skip a release check. Say it even when Brandon asked.
 - Conventional commits (`feat:`, `fix:`, `chore:`, `docs:`, etc.)
 - Squash merge to main for clean history
 

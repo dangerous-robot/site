@@ -4,6 +4,12 @@ Settled product decisions for dangerousrobot.org, newest first. Plans in `docs/p
 
 Decisions made before 2026-10-04 (mission, audience, positioning, trust model, content model, messaging, early roadmap) are in the private Drive discovery records and their Decisions Log, frozen on 2026-10-04 as history. The last Drive entries cover the version reset and the About and Values revision.
 
+## 2026-11-17
+
+- **Two kinds of release.** Normal site pages carry no beta label, have a lower bar and can ship one or two at a time as a site push (`1.0.0-beta.N.1`). Research pages and the pipeline carry the beta label and ship as a beta release (next `1.0.0-beta.N`) with more checks. A push that carries any research, pipeline or claim change is a beta release and ships everything on `main`; a site push is allowed only when nothing but site files changed since the last tag. A normal page that shows claim data counts as site when only its copy or layout changes, and as research when its claims or verdicts change. Checks for each kind: [`runbook.md`](runbook.md) § Releasing. *(Final)*
+- **Beta continues.** The beta label stays for another five to ten releases or more, until the research site is reliable and defensible. *(Final)*
+- **Agents hold the line on releases.** A beta takes a sixth open entry only with Brandon's explicit OK. Agents push back when a request would add unscheduled work to the beta in progress, ship research content without a beta number, or skip a release check. No pull requests; commits go straight to `main`. *(Final)*
+
 ## 2026-11-09
 
 - **Rank 8 of the first queue runs as a floor, not its top restatement.** The weak-verdict rule's "take the top restatement once" is skipped when that restatement is an exact count that grows daily (1,598 court proceedings by June 2026); the sentence is rewritten as a floor the record supports ("more than a thousand filings by mid-2026") and run once. One-off exception; the rule stands. *(Final)*

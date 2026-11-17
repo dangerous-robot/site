@@ -1,7 +1,7 @@
 # Priorities
 
 **Status**: Confirmed by the operator, 2026-10-07  
-**Last updated**: 2026-11-03
+**Last updated**: 2026-11-17
 
 The project's themes, highest first. Each names the work that serves it and the source that sets it. Status stays in the active roadmap ([`v1.0.0-roadmap.md`](v1.0.0-roadmap.md)) and [`UNSCHEDULED.md`](UNSCHEDULED.md). Who changes this file, and when: `AGENTS.md` § Priorities.
 
@@ -39,6 +39,6 @@ Counts, when present now:
 - A dependency advisory rated high or critical in code the site, Workers, pipeline or CI runs. In the pipeline, which handles fetched web content, a medium one counts too. Elsewhere, a lower one counts when its vulnerable code handles untrusted input here (say which).
 - Published claims, verdicts or sources that pipeline output or fetched content can change without a person's review.
 
-Does not count: an advisory in code this project never runs (write down why); hardening with no present weakness, such as separate agent identities (OPS-K), monitors, scans and security docs (a pre-approved agent command that prints a token or reads signer data is a present weakness and counts); anything whose fix needs a major-version upgrade (the Astro 7 upgrade with the `astro` AVIF and `sharp` advisories waits until after 1.0.0). Major-upgrade fixes are re-checked by the deeper security analysis instead.
+Does not count: an advisory in code this project never runs (write down why); hardening with no present weakness, such as separate agent identities (OPS-K), monitors, scans and security docs (a pre-approved agent command that prints a token or reads signer data is a present weakness and counts); anything whose fix needs a major-version upgrade. Major-upgrade fixes are re-checked by the deeper security analysis instead.
 
 Test: "Could someone, right now, read signer data, use a secret, change what the site serves or runs, or abuse a Worker, and does the fix avoid a major upgrade?" Yes to both: known security issue. Unsure whether it is a security issue at all: treat it as one and say why.

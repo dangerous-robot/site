@@ -192,7 +192,7 @@ inv build            # build Astro site
 inv lint             # lint research Markdown and check citations
 inv audit            # run dr lint and print a summary
 inv audit.prune      # list orphaned source files by year; --apply deletes them
-inv check            # type-check, build, lint, test (pre-push gate)
+inv check            # type-check, build, lint, test (runs in the pre-commit hook; required before a push)
 inv clean            # remove build artifacts
 inv worker-deploy    # type-check, test, migrate and deploy the dr-api Worker
 ```
@@ -308,6 +308,15 @@ Three mutually exclusive work states:
 
 **Only Scheduled work may be coded.** Unscheduled and Plan-only items can be planned freely (docs are never gated), but before any code edit the item must be in a release roadmap and registered as the active work item (the `release-triage` skill does both; see [Agent workflow tooling](#agent-workflow-tooling)). The one exception is a hotfix: an urgent `patch` registered without triage, which expires after 4 hours and must be added to the active roadmap or `UNSCHEDULED.md` before it is finished.
 
+**Two kinds of push, and agents push back.** Normal site pages can ship as a site push (`1.0.0-beta.N.1`); anything that touches research, the pipeline or a claim ships as a beta release (next `1.0.0-beta.N`) with the full checks. Kinds, checks and steps: `docs/runbook.md` § Releasing. An agent says so, in one line and before doing the work, when a request would:
+
+- add work that is not on the roadmap ("this is unscheduled; it adds to beta.N, now n open entries, or goes to the backlog");
+- take the beta in progress past five open entries (needs the operator's explicit OK, or the entry it replaces);
+- release a beta while an entry on its line is open, push research, pipeline or claim changes under a site-push number, or push anything without the operator's yes to the commit list;
+- skip a release check.
+
+This holds even when the request comes from the operator.
+
 A plan in `docs/plans/deferred/` counts as Unscheduled: its entry in the "Deferred plans" section of `docs/UNSCHEDULED.md` is the record. A release roadmap section whose plan is deferred keeps its letter and takes the status `deferred` with a one-line pointer, so section references in other docs stay valid.
 
 **Release roadmaps live at the top level of `docs/`**, not under `docs/plans/`. Sub-plans (one per discrete work item or feature) live under `docs/plans/`. The first public release will be `v1.0.0`, tracked in `docs/v1.0.0-roadmap.md`. Future release roadmaps follow the same pattern: `docs/v{semver}-roadmap.md` (or `docs/v{semver}.md` if the simpler name is preferred for that release).
@@ -321,7 +330,8 @@ A plan in `docs/plans/deferred/` counts as Unscheduled: its entry in the "Deferr
 **Transition rules:**
 - When a plan-only item gets prioritized but not release-assigned: add to UNSCHEDULED.md
 - When assigned to a release: add to the release roadmap, remove from UNSCHEDULED.md
-- When a release ships: `git mv docs/v{semver}-roadmap.md docs/plans/completed/`, and in the same change point `VERSION.md` "Active release:" at the next roadmap; then run backlog triage (`release-triage` skill). The context hook and `release-triage` read that line to find the in-flight release. Once the roadmap moves, the gate rejects any work item still pointing at the shipped release.
+- When a beta ships (a beta release, `docs/runbook.md` § Releasing): add its Releases row, move its done items to `## Shipped`, start the next `**Next beta (beta.N):**` line in `## Plan`, then run backlog triage (`release-triage` skill). The roadmap stays where it is.
+- When the release line ships (1.0.0, not each beta): `git mv docs/v{semver}-roadmap.md docs/plans/completed/`, and in the same change point `VERSION.md` "Active release:" at the next roadmap; then run backlog triage (`release-triage` skill). The context hook and `release-triage` read that line to find the in-flight release. Once the roadmap moves, the gate rejects any work item still pointing at the shipped release.
 
 **Plan filename suffix convention** — append to base name when it adds signal:
 
@@ -336,7 +346,7 @@ No suffix = plan is complete and reviewable. Keep the set small.
 
 **Release roadmap naming:** `docs/v{semver}-roadmap.md` (or `docs/v{semver}.md`). `VERSION.md` declares the current working version and the active release roadmap path.
 
-**Release roadmap layout:** a header, then `## Releases` (one row per beta or release: shipped, tagged, or in progress on `main`), `## Plan` (remaining items by target release), and the work items grouped under `## Shipped`, `## Scheduled` and `## Deferred`. An item moves between groups as its status changes.
+**Release roadmap layout:** a header, then `## Releases` (one row per beta or release: shipped, tagged, or in progress on `main`), `## Plan` (remaining items by target release: a `**Next beta (beta.N):**` line for the beta in progress and a `**Site (ships any time):**` line for normal-page work that can go out as a site push), and the work items grouped under `## Shipped`, `## Scheduled` and `## Deferred`. An item moves between groups as its status changes.
 
 **Work item IDs:** each release roadmap (major or minor) gives its work items IDs of the form `PREFIX-LETTER`, as in `SITE-J`. The prefix hints at the topic: `SITE` (reader-facing pages and content), `RE` (research archive and pipeline), `SEC` (security), `OPS` (repo, agent and deploy tooling); add a new prefix only when none fits. Letters run A, B, C … Z, then AA, AB … across the whole roadmap, so the letter alone is unique; a new item takes the next unused letter. IDs are never changed or reused, even if the topic shifts. Always cite an item with its name, as in "SITE-J (Responsible AI chatbots)", never a bare ID.
 

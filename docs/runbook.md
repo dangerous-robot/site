@@ -262,19 +262,54 @@ The hook calls the root `.venv/bin/dr` and fails the commit when it is missing, 
 
 ## Releasing
 
-Every push of `main` is a release: `VERSION.md` says each deploy bumps the beta number and gets a tag, and the deploy workflow refuses to build a commit that is not tagged (`scripts/check-release-tag.sh`, `docs/architecture/ci-deploy.md` § Release Tag Check). Local commits need nothing; before a push, from the repo root:
+Every push of `main` is a tagged release, and each push needs Brandon's yes for that push. The deploy workflow refuses to build a commit that is not tagged (`scripts/check-release-tag.sh`, `docs/architecture/ci-deploy.md` § Release Tag Check). Local commits need nothing.
 
-1. Set the first line of `VERSION.md` to the new version (`1.0.0-beta.N`, or `1.0.0-beta.N.1` for a patch while the next beta is in progress).
-2. Add the row to the Releases table of the active roadmap (`docs/v1.0.0-roadmap.md`) with the version in backticks, what shipped and "Tagged YYYY-MM-DD".
-3. Commit, then tag and push in one command, so the branch never arrives without its tag:
+### Which kind of push
+
+From the repo root, list what changed since the last tag:
 
 ```bash
-bash scripts/check-release-tag.sh   # fails until the tag exists; run after tagging to confirm
+last="$(git describe --tags --abbrev=0)"
+git log --oneline "$last"..HEAD
+git diff --stat "$last"..HEAD -- research pipeline src/pages/research
+```
+
+| Kind | Version | When |
+|---|---|---|
+| Beta release | `1.0.0-beta.N`, the next whole number | The push carries any research change: anything under `research/`, `pipeline/` or `src/pages/research/`, or a change to the claims or verdicts a normal page shows (Responsible AI chatbots, the homepage claim cards). It ships everything on `main`. |
+| Site push | `1.0.0-beta.N.1`, then `.2` | Nothing but site files changed since the last tag: normal pages (copy and layout), writing posts, petitions, styles, site code, docs and tooling. |
+
+Unsure which: it is a beta release. A site page that is ready while `main` holds research or pipeline work waits for that beta, or the beta ships now with everything. No script checks the kind today (the tag check accepts any version); the agent checks it and names the files that decided it.
+
+### Checks before the push
+
+Site push:
+
+1. `inv check` passes on the commit being pushed.
+2. Each changed page has had a copy review (`copy-review` skill).
+3. The agent lists the commits since the last tag, grouped as site, research pipeline and research content, names the version it will tag, and Brandon says yes to that list.
+
+Beta release: the three above, and:
+
+- Every entry on the `**Next beta (beta.N):**` line of the roadmap's `## Plan` is closed, or Brandon has moved it off the line.
+- Each new or changed published claim has Brandon's sign-off and a copy review.
+- After the deploy, a live check: open each changed page and each new or changed claim on dangerousrobot.org and confirm it shows the change. Record the result in the roadmap.
+
+An agent that is asked to skip a check says so and names the check before doing anything else.
+
+### Steps
+
+1. Set the first line of `VERSION.md` to the new version.
+2. Add the row to the Releases table of the active roadmap (`docs/v1.0.0-roadmap.md`) with the version in backticks, what shipped and "Tagged YYYY-MM-DD" (Pacific date).
+3. Commit, then tag, check and push. One push command carries the branch and the tag, so the branch never arrives without its tag:
+
+```bash
 git tag -a v1.0.0-beta.N -m "v1.0.0-beta.N"
+bash scripts/check-release-tag.sh   # passes once the tag is on HEAD
 git push --atomic origin main v1.0.0-beta.N
 ```
 
-A push without the tag reaches `origin` but the deploy fails at its first build step and the live site keeps the previous release; tag the commit and push the tag, then rerun the deploy from the Actions tab or with `gh workflow run deploy.yml --ref main`.
+If `main` reaches `origin` without a tag on its newest commit, the deploy fails at its first build step and the live site keeps the previous release. The Monday rebuild fails the same way until it is fixed. To fix it: if `VERSION.md` already names a version with no tag, tag that commit and push the tag; if `VERSION.md` was not bumped (its tag sits on an older commit), bump it, add the Releases row, commit, tag and push. Then rerun the deploy from the Actions tab or with `gh workflow run deploy.yml --ref main`.
 
 ## Separate agent credentials (OPS-K)
 

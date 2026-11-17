@@ -167,7 +167,7 @@ The browser test `tests/e2e/petition-qr.spec.ts` decodes the QR code on the peti
 
 ## Release Tag Check
 
-`bash scripts/check-release-tag.sh <commit>` runs first in the deploy `build` job against the pushed commit. `VERSION.md` says every deploy bumps the beta number and gets a tag, and this step enforces it: the build fails unless the tag `v<first line of VERSION.md>` points at that commit and the active roadmap (the `Active release:` line of `VERSION.md`) has a Releases row for that version. The runner's checkout is shallow, so the script fetches that one tag over https before checking. The failure message prints the bump-and-tag steps. Run it locally with no argument to check `HEAD`; it exits 1 on an untagged commit. See `docs/runbook.md` § Releasing.
+`bash scripts/check-release-tag.sh <commit>` runs first in the deploy `build` job against the pushed commit. Every push of `main` is a tagged release, either a beta release or a site push (`docs/runbook.md` § Releasing), and this step enforces the tag: the build fails unless the tag `v<first line of VERSION.md>` points at that commit and the active roadmap (the `Active release:` line of `VERSION.md`) has a Releases row for that version. The runner's checkout is shallow, so the script fetches that one tag over https before checking. The failure message prints the bump-and-tag steps. Run it locally with no argument to check `HEAD`; it exits 1 on an untagged commit. The script accepts any version string; it does not check whether the push should be a beta release or a site push. See `docs/runbook.md` § Releasing.
 
 ## Citation Integrity
 
