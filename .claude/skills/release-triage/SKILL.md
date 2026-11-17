@@ -144,7 +144,7 @@ Answers "what's the status of the release?" in one fixed form. It reads the Step
 ```bash
 last="$(git describe --tags --abbrev=0)"
 git log --oneline "$last"..HEAD | wc -l                              # commits not yet live (local refs; no fetch)
-git diff --name-only "$last"..HEAD -- research pipeline src/pages/research
+git diff --name-only "$last"..HEAD -- research pipeline src/pages/research scripts/scheduled-recheck.sh .github/workflows/recheck.yml
 ```
 
 ```
