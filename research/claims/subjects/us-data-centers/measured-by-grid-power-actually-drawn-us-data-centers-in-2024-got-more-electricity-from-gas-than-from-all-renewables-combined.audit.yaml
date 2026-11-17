@@ -698,10 +698,11 @@ audit:
   pipeline_confidence: medium
   rule_applied: agreed
 human_review:
-  reviewed_at: null
-  reviewer: null
+  reviewed_at: '2026-11-17'
+  reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null
+  verdict_override: null
 analyst_record:
   title: Measured by grid power actually drawn, US data centers in 2024 got more electricity
     from gas than from all renewables combined.

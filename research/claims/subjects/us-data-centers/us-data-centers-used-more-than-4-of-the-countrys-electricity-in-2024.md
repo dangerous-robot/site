@@ -2,13 +2,15 @@
 title: US data centers used more than 4% of the country's electricity in 2024.
 statement: US data centers used more than 4% of the country's electricity in 2024.
 entity: subjects/us-data-centers
-topics: [environmental-impact]
+topics:
+- environmental-impact
 verdict: 'true'
 confidence: high
 verification_level: multiply-verified
 takeaway: ''
 seo_title: US data centers >4% electricity 2024
-status: draft
+criteria_slug: data-centers-electricity-share
+status: published
 as_of: '2026-10-14'
 sources:
 - 2025/what-we-know-about-energy-use-at-us-data-centers-amid-the-ai-boom

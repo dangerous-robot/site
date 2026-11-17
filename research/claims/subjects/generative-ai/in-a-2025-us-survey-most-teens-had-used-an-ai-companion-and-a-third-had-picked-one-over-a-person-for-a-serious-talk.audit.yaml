@@ -482,10 +482,11 @@ audit:
   pipeline_confidence: medium
   rule_applied: agreed
 human_review:
-  reviewed_at: null
-  reviewer: null
+  reviewed_at: '2026-11-17'
+  reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null
+  verdict_override: null
 analyst_record:
   title: In a 2025 US survey, most teens had used an AI companion and a third had
     picked one over a person for a serious talk.

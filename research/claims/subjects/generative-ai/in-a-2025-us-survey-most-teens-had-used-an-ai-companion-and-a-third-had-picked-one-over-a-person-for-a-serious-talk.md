@@ -4,13 +4,16 @@ title: In a 2025 US survey, most teens had used an AI companion and a third had 
 statement: In a 2025 US survey, most teens had used an AI companion and a third had
   picked one over a person for a serious talk.
 entity: subjects/generative-ai
-topics: [industry-analysis, ai-literacy]
+topics:
+- industry-analysis
+- ai-literacy
 verdict: 'true'
 confidence: medium
 verification_level: multiply-verified
 takeaway: ''
 seo_title: '2025 teen AI survey: most use third prefer'
-status: draft
+criteria_slug: teens-ai-companion-use
+status: published
 as_of: '2026-11-08'
 next_recheck_due: '2027-01-07'
 sources:

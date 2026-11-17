@@ -4,13 +4,16 @@ title: By mid-2026, courts worldwide had caught AI-invented citations in more th
 statement: By mid-2026, courts worldwide had caught AI-invented citations in more
   than a thousand filings.
 entity: subjects/generative-ai
-topics: [industry-analysis, ai-safety]
+topics:
+- industry-analysis
+- ai-safety
 verdict: 'true'
 confidence: high
 verification_level: multiply-verified
 takeaway: ''
 seo_title: 1,000+ AI citations caught by courts 2026
-status: draft
+criteria_slug: courts-ai-invented-citations
+status: published
 as_of: '2026-11-09'
 next_recheck_due: '2027-01-08'
 sources:

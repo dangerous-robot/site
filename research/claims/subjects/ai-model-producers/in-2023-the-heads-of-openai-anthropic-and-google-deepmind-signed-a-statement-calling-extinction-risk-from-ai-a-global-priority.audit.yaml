@@ -449,10 +449,11 @@ audit:
   pipeline_confidence: high
   rule_applied: agreed
 human_review:
-  reviewed_at: null
-  reviewer: null
+  reviewed_at: '2026-11-17'
+  reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null
+  verdict_override: null
 analyst_record:
   title: In 2023 the heads of OpenAI, Anthropic and Google DeepMind signed a statement
     calling extinction risk from AI a global priority.

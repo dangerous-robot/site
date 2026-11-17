@@ -2,13 +2,17 @@
 title: Serving generative AI answers (inference) now uses more electricity than training
   the models
 entity: subjects/generative-ai
-topics: [environmental-impact, ai-safety, industry-analysis]
+topics:
+- environmental-impact
+- ai-safety
+- industry-analysis
 verdict: 'true'
 confidence: medium
 verification_level: multiply-verified
 takeaway: Inference now dominates AI’s electricity consumption, out‑pacing training.
 seo_title: AI inference uses more power than training
-status: draft
+criteria_slug: ai-inference-vs-training-electricity
+status: published
 as_of: '2026-10-10'
 sources:
 - 2026/s1364032125008329

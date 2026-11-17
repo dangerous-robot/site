@@ -239,10 +239,11 @@ audit:
   evidence_gaps: []
   needs_review_reasons: []
 human_review:
-  reviewed_at: null
-  reviewer: null
+  reviewed_at: '2026-11-17'
+  reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null
+  verdict_override: null
 analyst_record:
   title: Serving generative AI answers (inference) now uses more electricity than
     training the models

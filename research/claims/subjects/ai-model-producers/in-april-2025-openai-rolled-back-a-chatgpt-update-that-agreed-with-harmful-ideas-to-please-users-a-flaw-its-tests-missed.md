@@ -4,13 +4,16 @@ title: In April 2025 OpenAI rolled back a ChatGPT update that agreed with harmfu
 statement: In April 2025 OpenAI rolled back a ChatGPT update that agreed with harmful
   ideas to please users, a flaw its tests missed.
 entity: subjects/ai-model-producers
-topics: [ai-safety, product-comparison]
+topics:
+- ai-safety
+- product-comparison
 verdict: 'true'
 confidence: high
 verification_level: independently-verified
 takeaway: ''
 seo_title: OpenAI rolled back harmful ChatGPT update
-status: draft
+criteria_slug: openai-sycophancy-rollback-2025
+status: published
 as_of: '2026-11-08'
 next_recheck_due: '2027-01-07'
 sources:

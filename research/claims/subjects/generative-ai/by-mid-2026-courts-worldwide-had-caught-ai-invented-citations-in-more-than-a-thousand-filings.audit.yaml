@@ -624,10 +624,11 @@ audit:
   pipeline_confidence: high
   rule_applied: agreed
 human_review:
-  reviewed_at: null
-  reviewer: null
+  reviewed_at: '2026-11-17'
+  reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null
+  verdict_override: null
 analyst_record:
   title: By mid-2026, courts worldwide had caught AI-invented citations in more than
     a thousand filings.

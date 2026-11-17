@@ -1,5 +1,6 @@
 ---
 title: Earthly Insight is hosted on renewable energy
+statement: Earthly Insight is hosted on renewable energy
 entity: products/earthly-insight
 topics:
 - environmental-impact
@@ -10,19 +11,24 @@ takeaway: ''
 seo_title: Earthly Insight hosted on renewable energy
 criteria_slug: renewable-energy-hosting
 status: published
-as_of: '2026-10-10'
+as_of: '2026-10-14'
+next_recheck_due: '2026-12-13'
 sources:
-- 2025/earthly-insight-joins-global-rewilding-champions
-- 2016/announcement-100
 - 2026/earthly-insight-conscious-ai-assistant
-- 2026/green-web-foundation-index
-- 2025/introducing-earthly-insight-more-conscious-143500454html
+- 2026/earthly-insight
 - 2026/directory
-- 2026/green
+- 2025/earthly-insight-joins-global-rewilding-champions
 source_overrides:
 - source: 2026/earthly-insight-conscious-ai-assistant
   independence: first-party
   reason: 'Entity match: URL host earthlyinsight.com is the entity''s website (earthlyinsight.com).'
+- source: 2026/directory
+  independence: unknown
+  reason: 'Off-entity: the source does not mention Earthly Insight, and the claim
+    does not name its publisher.'
+- source: 2026/earthly-insight
+  independence: first-party
+  reason: 'Entity match: URL is the entity''s own linkedin.com account.'
 tags: []
 ---
-None of the available sources provide a direct statement that Earthly Insight hosts its services on renewable energy. The partnership announcement and the company’s own marketing materials emphasize eco‑conscious practices such as avoiding energy‑intensive features, but they do not explicitly commit to renewable‑energy hosting (*Earthly Insight Joins Global Rewilding Champions*; *Earthly Insight: A Conscious AI Assistant*). Independent reports about third‑party green‑hosting registries (the Green Web Foundation) describe their verification services, yet they do not list Earthly Insight as a verified green host (*The Green Web Foundation*; *Green Web Directory*). No source identifies Earthly Insight’s hosting provider, nor confirms that any provider it uses guarantees renewable energy (*Krystal's Green Hosting Mission and Approach* is about Krystal, not Earthly Insight). Consequently, the claim cannot be confirmed or refuted based on the evidence.
+None of the examined sources provide any information about Earthly Insight’s hosting infrastructure or whether its services run on renewable energy. The company’s own article *Earthly Insight: A Conscious AI Assistant* and its LinkedIn blog describe the product’s environmental donations but do not mention hosting providers or energy sources. An independent piece about Earthly Insight’s partnership with the Global Rewilding Alliance likewise focuses on rewilding commitments and does not address hosting. Third‑party resources such as the Green Web Directory and AWS sustainability reports discuss green hosting standards and renewable‑energy‑powered cloud services, but they do not list Earthly Insight as a customer or verify its use of renewable energy. Additionally, no source reports a retraction, modification, or public challenge of any renewable‑energy hosting claim. Because the claim is not directly addressed by any source, it remains unverified.

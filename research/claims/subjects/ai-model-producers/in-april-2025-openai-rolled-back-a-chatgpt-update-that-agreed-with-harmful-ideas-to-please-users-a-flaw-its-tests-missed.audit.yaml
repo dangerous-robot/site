@@ -571,10 +571,11 @@ audit:
   pipeline_confidence: high
   rule_applied: agreed
 human_review:
-  reviewed_at: null
-  reviewer: null
+  reviewed_at: '2026-11-17'
+  reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null
+  verdict_override: null
 analyst_record:
   title: In April 2025 OpenAI rolled back a ChatGPT update that agreed with harmful
     ideas to please users, a flaw its tests missed.

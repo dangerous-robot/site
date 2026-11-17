@@ -2,14 +2,15 @@
 title: ChatGPT does not use user data for training
 statement: ChatGPT does not use user data for training
 entity: products/chatgpt
-topics: [data-privacy]
+topics:
+- data-privacy
 verdict: 'false'
 confidence: medium
 verification_level: multiply-verified
 takeaway: ''
 seo_title: ChatGPT does not use user data training
 criteria_slug: no-training-on-user-data
-status: draft
+status: published
 as_of: '2026-11-08'
 next_recheck_due: '2027-01-07'
 sources:

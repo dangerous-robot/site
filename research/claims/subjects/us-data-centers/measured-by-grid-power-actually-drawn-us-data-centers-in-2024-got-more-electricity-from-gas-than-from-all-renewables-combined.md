@@ -4,13 +4,16 @@ title: Measured by grid power actually drawn, US data centers in 2024 got more e
 statement: Measured by grid power actually drawn, US data centers in 2024 got more
   electricity from gas than from all renewables combined.
 entity: subjects/us-data-centers
-topics: [environmental-impact, industry-analysis]
+topics:
+- environmental-impact
+- industry-analysis
 verdict: 'true'
 confidence: medium
 verification_level: multiply-verified
 takeaway: US data centers relied on natural gas more than renewables in 2024.
 seo_title: 'US data centers: gas > renewables 2024'
-status: draft
+criteria_slug: data-centers-gas-vs-renewables
+status: published
 as_of: '2026-11-08'
 next_recheck_due: '2027-01-07'
 sources:

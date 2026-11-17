@@ -274,10 +274,11 @@ audit:
   pipeline_confidence: high
   rule_applied: agreed
 human_review:
-  reviewed_at: null
-  reviewer: null
+  reviewed_at: '2026-11-17'
+  reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null
+  verdict_override: null
 analyst_record:
   title: US data centers used more than 4% of the country's electricity in 2024.
   seo_title: US data centers >4% electricity 2024
