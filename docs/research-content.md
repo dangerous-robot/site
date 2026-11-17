@@ -1,6 +1,6 @@
 # Research content: principles, queue and scouting
 
-**Status**: Approved 2026-11-08; first queue run 2026-11-08 and 2026-11-09, budget spent; awaiting Brandon's walkthrough; rank 10 held for a pipeline fix; the homepage FLI claim holds beta.10 (§ Changes in flight)  
+**Status**: Approved 2026-11-08; first queue run 2026-11-08 and 2026-11-09, budget spent; awaiting Brandon's walkthrough; rank 10 held for a pipeline fix; the homepage FLI claim's source refresh is RE-BS (FLI claim sources move to the Summer 2026 index) on beta.11  
 **Stream**: research content (claims, sources, drafts, rechecks). Not the site, not the pipeline code.  
 **Home**: `docs/research-content.md`, beside `priorities.md`; the dated decisions are in `docs/decisions.md` under 2026-11-08.
 
@@ -70,7 +70,7 @@ Rules:
 | Group | Claim | Change | Why | State | Blocker or next step | Target beta |
 |---|---|---|---|---|---|---|
 | Homepage | Using generative AI harms cognitive ability (`subjects/generative-ai/using-generative-ai-harms-cognitive-ability`) | recheck | scheduled recheck; as_of 2026-11-07, confidence medium to high | approved not yet live | none | beta.10 |
-| Homepage | None of the major AI model producers score above D+ on existential safety in the latest FLI AI Safety Index (`subjects/ai-model-producers/ai-producers-existential-score`) | reword and recheck | the sentence now says "the latest FLI index" while its sources are the 2025 edition; the Summer 2026 index is out | held; blocks beta.10 | The 2026-11-17 paid rerun returned `false` by misreading "no company exceeds C-"; FLI's own table gives D+ at most, so the sentence holds. Pending draft not approved; Brandon decides how to get a correct draft (`docs/UNSCHEDULED.md` § Recheck findings) | beta.10 |
+| Homepage | None of the major AI model producers score above D+ on existential safety in the latest FLI AI Safety Index (`subjects/ai-model-producers/ai-producers-existential-score`) | reword and recheck | the sentence now says "the latest FLI index" while its sources are the 2025 edition; the Summer 2026 index is out | planned | RE-BS (FLI claim sources move to the Summer 2026 index): pipeline fix for the 2026-11-17 misread, then a paid rerun (Brandon's budget OK). The live claim ships unchanged in beta.10; FLI's own 2026 table gives D+ at most, so the sentence holds | beta.11 |
 | Responsible AI page | Earthly Insight renewable-energy hosting, second version (`research/pending/earthly-insight/renewable-energy-hosting.md`) | recheck | rerun of the published claim, as_of 2026-10-14, verdict unverified | waiting on Brandon | sign-off or delete at the terminal | the beta after sign-off |
 | Responsible AI page | Rows with a criterion and no claims: real-time energy display, no image generation, ownership structure | new claims | the cells rest on sources only | planned | not scheduled; product-comparison claims keep their own slow track | none |
 | Elephant | Ranks 2, 3, 4 (three product claims), 5, 6, 8 and 9 | new claims | § Elephant ranked queue | waiting on Brandon | his walkthrough sign-off | beta.10 if signed off before it ships |
@@ -80,7 +80,7 @@ Rules:
 | Elephant | Superseded drafts: the 2026-10-14 drafts behind ranks 1 and 9, the two earlier rank 8 wordings, the rank 10 first run | delete | replaced by the ranked wordings | waiting on Brandon | `d` in the walkthrough | none |
 | Elephant | Reserves and the § Triage of the eight subject drafts holds and archives | new claims or archive | § Triage of the eight subject drafts | planned | the walkthrough, then a new paid-run budget | none yet |
 | Other | Microsoft AI humanist code of conduct critique (`research/reports/2026-11-03-microsoft-ai-humanist-code-of-conduct.md`) and `research/reports/README.md` | new report | adversarial review | draft report | Brandon's read; files untracked | none |
-| Other | Four Summer 2026 FLI AI Safety Index sources (`research/sources/2026/ai-safety-index-*.md`, `the-2026-ai-safety-index-nine-ai.md`) | new sources | needed by the homepage FLI claim's rerun | untracked | commit with that rerun | beta.10 |
+| Other | Four Summer 2026 FLI AI Safety Index sources (`research/sources/2026/ai-safety-index-*.md`, `the-2026-ai-safety-index-nine-ai.md`) | new sources | needed by the homepage FLI claim's rerun | untracked | commit with that rerun | beta.11 |
 
 ### Why each change was made
 
@@ -97,7 +97,7 @@ Rank order is the scout's shortlist with one change: C2 (gas against renewables)
 | Rank | Sentence | Where it stands | Criterion | Earns its place by | Recommendation |
 |---|---|---|---|---|---|
 | published | Using generative AI harms cognitive ability. | published, true, 2026-11-07 | `using-generative-ai-harms-cognitive-ability` | P2 | keep |
-| published | None of the major AI model producers score above D+ on existential safety in the latest FLI AI Safety Index. | published, true, 2026-05-10 | `ai-producers-existential-score` | P2 | held: blocks beta.10 until the paid RE-BR (Recheck ingest fixes) rerun brings its sources to the Summer 2026 index |
+| published | None of the major AI model producers score above D+ on existential safety in the latest FLI AI Safety Index. | published, true, 2026-05-10 | `ai-producers-existential-score` | P2 | keep; RE-BS (FLI claim sources move to the Summer 2026 index) brings its sources to the Summer 2026 index in beta.11 |
 | 1 | Data centers' "100% renewable" claims mean certificates matched to a year's use, not renewable power hour by hour. | draft, mostly-true (low), run 2026-11-08, tie-broken; the narrative argues mixed | none; ad hoc | P2, the most-assumed badge in the environmental case | hold for RE-BM (Tie-broken claims get a matching narrative) on beta.11; the 2026-10-14 draft awaits Brandon's `d` |
 | 2 | In April 2025 OpenAI rolled back a ChatGPT update that agreed with harmful ideas to please users, a flaw its tests missed. | draft, true (high), run 2026-11-08 | ad hoc under `subjects/ai-model-producers` (A: it is about what a maker admitted, not a product comparison; `anti-sycophancy-by-design` stays a product criterion) | P2 and P3: the "grants wishes" thesis plus a maker's admission | approve |
 | 3 | In 2023 the heads of OpenAI, Anthropic and Google DeepMind signed a statement calling extinction risk from AI a global priority. | draft, true (high), run 2026-11-08; criterion `ai-producers-signed-extinction-risk-statement` attached | ad hoc under `subjects/ai-model-producers`, then a new criterion attached (A: the existing `ai-producers-signed-safety-commitments`, "Most major ENTITY have signed AI safety commitments", asks a vaguer question and is left alone) | P2: the second danger, on the record from the builders | approve |
