@@ -45,7 +45,7 @@ Also classify **size**: `small` (fits in the current beta or patch without a pla
 Decision rules, in order:
 
 1. **patch** → the active release line (the roadmap named in `VERSION.md` "Active release:"). Add it as a new work item (next unused letter, topic prefix) under `## Scheduled`, or as a checklist line in an existing item it belongs to. Then put it on one `## Plan` line:
-   - **Site line.** A patch to a normal page (nothing under `research/`, `pipeline/` or `src/pages/research/`, and no change to a claim or verdict a page shows) goes on `**Site (ships any time):**`. It does not count toward the beta's size and can go out as a site push.
+   - **Site line.** A patch to a normal page (no research change as `docs/runbook.md` § Releasing defines it) goes on `**Site (ships any time):**`. It does not count toward the beta's size and can go out as a site push.
    - **Beta line.** Any other patch is an entry on `**Next beta (beta.N):**` and takes the size check in § Choosing the next item ("Release size"). A small patch needs no plan file; it still gets the size check.
 2. **minor, and the active line is a pre-1.0 beta** → ask one question: "Ride the next beta (beta.N), wait for a later beta, or go to the backlog?" Default recommendation: the next beta if it serves the current focus (`docs/mission-and-voice.md`, `docs/decisions.md`) and the beta has room; a later beta if it serves the focus and the beta is full; otherwise the backlog.
 3. **minor, post-1.0, and the active line is a patch release** → the next minor roadmap. If `docs/v{next-minor}-roadmap.md` does not exist, create it from the template below.
