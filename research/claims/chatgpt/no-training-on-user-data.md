@@ -8,7 +8,7 @@ verdict: 'false'
 confidence: medium
 verification_level: multiply-verified
 takeaway: ''
-seo_title: ChatGPT does not use user data training
+seo_title: ChatGPT trains on user chats by default
 criteria_slug: no-training-on-user-data
 status: published
 as_of: '2026-11-08'

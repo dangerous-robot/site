@@ -11,7 +11,7 @@ verdict: 'true'
 confidence: high
 verification_level: multiply-verified
 takeaway: ''
-seo_title: 1,000+ AI citations caught by courts 2026
+seo_title: AI fake citations in 1,000+ court filings
 criteria_slug: courts-ai-invented-citations
 status: published
 as_of: '2026-11-09'
@@ -22,4 +22,4 @@ sources:
 - 2025/thefalloutofaihallucinationsincourtfilingspdf
 tags: []
 ---
-Independent datasets and reports document thousands of cases where courts have identified AI‑generated or fabricated legal citations. The *AI Hallucination Cases* dataset lists 2,217 filings worldwide where AI‑invented citations were flagged by tribunals, while the *AI Citation Errors in Legal Research* article cites over 1,174 sanctioned filings by early 2026. The *Fallout of AI Hallucinations in Court Filings* report adds more than 700 documented instances, all confirming that well over a thousand filings have been caught globally by mid‑2026.
+Independent datasets and reports document thousands of cases where courts have identified AI‑generated or fabricated legal citations. The *AI Hallucination Cases* dataset lists 2,217 filings worldwide where AI‑invented citations were flagged by tribunals, while the *AI Citation Errors in Legal Research* article cites 1,174 sanctioned filings by early 2026. The *Fallout of AI Hallucinations in Court Filings* report adds more than 700 documented instances. The two larger counts put the total well over a thousand by mid‑2026.

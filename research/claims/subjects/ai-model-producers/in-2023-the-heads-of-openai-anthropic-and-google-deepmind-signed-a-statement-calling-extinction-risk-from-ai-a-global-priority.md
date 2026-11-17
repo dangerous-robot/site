@@ -10,7 +10,7 @@ verdict: 'true'
 confidence: high
 verification_level: multiply-verified
 takeaway: Top AI lab CEOs jointly flagged AI extinction as a global priority in 2023.
-seo_title: OpenAI, Anthropic, DeepMind sign AI risk
+seo_title: AI lab heads signed extinction statement
 criteria_slug: ai-producers-signed-extinction-risk-statement
 status: published
 as_of: '2026-11-08'
