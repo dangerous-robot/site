@@ -291,7 +291,7 @@ Site push:
 
 Beta release: the three above, and:
 
-- Every entry on the `**Next beta (beta.N):**` line of the roadmap's `## Plan` is closed, or Brandon has moved it off the line.
+- Every entry on the `**Next beta (beta.N):**` line of the roadmap's `## Plan` is closed, or Brandon has moved it off the line. An entry whose only open lines are checks that can run only after the push (a first scheduled run, a CI job on the deploy) counts as closed for this check; those lines stay open and close after the live check.
 - Each new or changed published claim has Brandon's sign-off and a copy review.
 - After the deploy, a live check: open each changed page and each new or changed claim on dangerousrobot.org and confirm it shows the change. Record the result in the roadmap.
 
