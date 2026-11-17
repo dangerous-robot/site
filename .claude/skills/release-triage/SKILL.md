@@ -158,7 +158,8 @@ Beta size: {n} open entries, limit 5.
 - ID (Name): {state}. {One plain sentence: what is committed, or the one step left and who takes it.}
 
 ### Research content (claims and drafts)
-- Published / Ready for your sign-off / Held / Your decision: a count each, one line each
+- {group}: {count per state}, one line per group
+- Held or waiting: {row} ({blocker or next step}), one line each
 
 Left before beta.N: {each open entry as ID (Name) plus its next step}
 Roadmap lines that look stale: {only when found}
@@ -172,7 +173,7 @@ Rules:
 - **State.** From the item's `**Status**` line and its unticked checklist lines: `done`, `absorbed` and `retired` read "done"; `in progress` with only an operator step left reads "waiting on you", with only a release or deploy step left reads "waiting on the release"; other `in progress` reads "in progress"; `ready` and `plan needed` read "not started"; `decision needed` reads "needs your decision"; `deferred` is left out. When the Status line and the checklist disagree, use the checklist and report the line as stale.
 - **Order within a group.** Waiting on you, needs your decision, waiting on the release, in progress, not started, done.
 - **Done is not live.** Done means committed. Say "not yet live" until its release is tagged.
-- **Research content.** Always shown, as counts from the Status line and the queue table of `docs/research-content.md`. Name a held draft's blocker when it is a roadmap item. Detail stays in that file.
+- **Research content.** Always shown, from the § Changes in flight table of `docs/research-content.md`: a count of rows per group (Homepage, Responsible AI page, Elephant, Other) and state, then each held or waiting row by name with its blocker or next step (a roadmap item as ID plus name). Say first when a held row blocks the next beta. Detail stays in that file.
 - **Stale lines.** One line, only when a roadmap line contradicts itself or the repo. Offer the fix; do not make it inside a status answer.
 - **Wording.** Every ID carries its name. Each item is one sentence a reader can follow without the roadmap open; spell out who does the step and whether it costs a paid run.
 

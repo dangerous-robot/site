@@ -1,6 +1,6 @@
 # Research content: principles, queue and scouting
 
-**Status**: Approved 2026-11-08; first queue run 2026-11-08 and 2026-11-09, budget spent; awaiting Brandon's walkthrough; rank 10 held for a pipeline fix  
+**Status**: Approved 2026-11-08; first queue run 2026-11-08 and 2026-11-09, budget spent; awaiting Brandon's walkthrough; rank 10 held for a pipeline fix; the homepage FLI claim holds beta.10 (§ Changes in flight)  
 **Stream**: research content (claims, sources, drafts, rechecks). Not the site, not the pipeline code.  
 **Home**: `docs/research-content.md`, beside `priorities.md`; the dated decisions are in `docs/decisions.md` under 2026-11-08.
 
@@ -56,19 +56,49 @@ One line each; these are the entries proposed for `docs/decisions.md`.
 
 **How it is invoked.** Open: a saved prompt in `docs/`, or a repo skill (`/scout-claims`) under `.claude/skills/`. Recommendation: the skill, because the prompt has seven fixed inputs (principles, vocabulary, output shape) and a fixed output path, and a skill keeps them from drifting between sessions. Left to Brandon.
 
-## Candidate queue
+## Changes in flight
+
+Every planned, in-progress, waiting or unpublished change to research content, in four groups: Homepage (the two homepage claims), Responsible AI page (claims and sources the chatbots page links to), Elephant (the ranked queue below) and Other (everything else, reports and untracked sources included).
+
+Rules:
+
+- A row is added when a change is first planned, before any paid run, and names who does the next step and whether it is a paid run.
+- State is one of: planned, in progress, waiting on Brandon, ready to publish, approved not yet live, held, draft report, untracked. "Held" names its blocker; a held row that blocks a beta says so.
+- A row drops off when the beta that carries it is tagged; git history and the records under § Why each change was made keep it after that.
+- No new Elephant candidates are added until Brandon's walkthrough of ranks 1 to 10 is done (Brandon, 2026-11-17).
+
+| Group | Claim | Change | Why | State | Blocker or next step | Target beta |
+|---|---|---|---|---|---|---|
+| Homepage | Using generative AI harms cognitive ability (`subjects/generative-ai/using-generative-ai-harms-cognitive-ability`) | recheck | scheduled recheck; as_of 2026-11-07, confidence medium to high | approved not yet live | none | beta.10 |
+| Homepage | None of the major AI model producers score above D+ on existential safety in the latest FLI AI Safety Index (`subjects/ai-model-producers/ai-producers-existential-score`) | reword and recheck | the sentence now says "the latest FLI index" while its sources are the 2025 edition; the Summer 2026 index is out | held; blocks beta.10 | Brandon's paid confirming rerun under RE-BR (Recheck ingest fixes). The paid-run budget is spent, so the rerun starts only with Brandon's budget OK. The 2026-11-07 recheck draft is parked in `handoff/pending-drafts-2026-11-07/` | beta.10 |
+| Responsible AI page | Earthly Insight renewable-energy hosting, second version (`research/pending/earthly-insight/renewable-energy-hosting.md`) | recheck | rerun of the published claim, as_of 2026-10-14, verdict unverified | waiting on Brandon | sign-off or delete at the terminal | the beta after sign-off |
+| Responsible AI page | Rows with a criterion and no claims: real-time energy display, no image generation, ownership structure | new claims | the cells rest on sources only | planned | not scheduled; product-comparison claims keep their own slow track | none |
+| Elephant | Ranks 2, 3, 4 (three product claims), 5, 6, 8 and 9 | new claims | § Elephant ranked queue | waiting on Brandon | his walkthrough sign-off | beta.10 if signed off before it ships |
+| Elephant | Rank 1, "100% renewable" means certificates | new claim | § Elephant ranked queue | held | RE-BM (Tie-broken claims get a matching narrative) | beta.11 |
+| Elephant | Rank 7, a third of a watt-hour per prompt | new claim | counter-thesis, case by case | waiting on Brandon | rerun as rewritten (paid) or archive | none yet |
+| Elephant | Rank 10, the four US labs train on your chats by default | new claim | § Elephant ranked queue | held | analyst instruction fix (pipeline stream), then one paid rerun | none yet |
+| Elephant | Superseded drafts: the 2026-10-14 drafts behind ranks 1 and 9, the two earlier rank 8 wordings, the rank 10 first run | delete | replaced by the ranked wordings | waiting on Brandon | `d` in the walkthrough | none |
+| Elephant | Reserves and the § Triage of the eight subject drafts holds and archives | new claims or archive | § Triage of the eight subject drafts | planned | the walkthrough, then a new paid-run budget | none yet |
+| Other | Microsoft AI humanist code of conduct critique (`research/reports/2026-11-03-microsoft-ai-humanist-code-of-conduct.md`) and `research/reports/README.md` | new report | adversarial review | draft report | Brandon's read; files untracked | none |
+| Other | Four Summer 2026 FLI AI Safety Index sources (`research/sources/2026/ai-safety-index-*.md`, `the-2026-ai-safety-index-nine-ai.md`) | new sources | needed by the homepage FLI claim's rerun | untracked | commit with that rerun | beta.10 |
+
+### Why each change was made
+
+Each change carries its own reason in three places that already exist: the sign-off note (`dr review --claim REF --notes "<why>"`, stored as `human_review.notes` in the claim's audit file), the conventional commit message that names the claim and the reason, and, when a published verdict changes, the claim's `corrections` list (date, summary, previous verdict), which readers see.
+
+### Elephant ranked queue
 
 The first queue, produced by the 2026-11-08 scouting run and the author's read of it. Sentences are the rewritten forms; the scout's recalled numbers are not carried here. "Criterion" says whether a criterion in `research/templates.yaml` already covers the sentence (there are 23 criteria; 20 have no claim).
 
 Sentence length: a claim sentence stays well under 150 characters, 150 is too long (B, 2026-11-08); detail that does not fit goes to the narrative. Sentences here are the shortened forms.
 
-Rank order is the scout's shortlist with one change: C2 (gas against renewables) is kept as the ninth, ahead of the reserves, because it pairs with C1 and is a dated fact.
+Rank order is the scout's shortlist with one change: C2 (gas against renewables) is kept as the ninth, ahead of the reserves, because it pairs with C1 (the "100% renewable" claim) and is a dated fact.
 
 | Rank | Sentence | Where it stands | Criterion | Earns its place by | Recommendation |
 |---|---|---|---|---|---|
 | published | Using generative AI harms cognitive ability. | published, true, 2026-11-07 | `using-generative-ai-harms-cognitive-ability` | P2 | keep |
-| published | None of the major AI model producers score above D+ on existential safety in the latest FLI AI Safety Index. | published, true, 2026-05-10 | `ai-producers-existential-score` | P2 | keep; RE-BR rerun pending |
-| 1 | Data centers' "100% renewable" claims mean certificates matched to a year's use, not renewable power hour by hour. | draft, mostly-true (low), run 2026-11-08, tie-broken; the narrative argues mixed | none; ad hoc | P2, the most-assumed badge in the environmental case | hold for RE-BM (Tie-broken claims get a matching narrative) on beta.10; the 2026-10-14 draft awaits Brandon's `d` |
+| published | None of the major AI model producers score above D+ on existential safety in the latest FLI AI Safety Index. | published, true, 2026-05-10 | `ai-producers-existential-score` | P2 | held: blocks beta.10 until the paid RE-BR (Recheck ingest fixes) rerun brings its sources to the Summer 2026 index |
+| 1 | Data centers' "100% renewable" claims mean certificates matched to a year's use, not renewable power hour by hour. | draft, mostly-true (low), run 2026-11-08, tie-broken; the narrative argues mixed | none; ad hoc | P2, the most-assumed badge in the environmental case | hold for RE-BM (Tie-broken claims get a matching narrative) on beta.11; the 2026-10-14 draft awaits Brandon's `d` |
 | 2 | In April 2025 OpenAI rolled back a ChatGPT update that agreed with harmful ideas to please users, a flaw its tests missed. | draft, true (high), run 2026-11-08 | ad hoc under `subjects/ai-model-producers` (A: it is about what a maker admitted, not a product comparison; `anti-sycophancy-by-design` stays a product criterion) | P2 and P3: the "grants wishes" thesis plus a maker's admission | approve |
 | 3 | In 2023 the heads of OpenAI, Anthropic and Google DeepMind signed a statement calling extinction risk from AI a global priority. | draft, true (high), run 2026-11-08; criterion `ai-producers-signed-extinction-risk-statement` attached | ad hoc under `subjects/ai-model-producers`, then a new criterion attached (A: the existing `ai-producers-signed-safety-commitments`, "Most major ENTITY have signed AI safety commitments", asks a vaguer question and is left alone) | P2: the second danger, on the record from the builders | approve |
 | 4 | Consumer ChatGPT and Gemini train on your chats unless you opt out, and Meta AI gives US users no opt-out. | drafts, run 2026-11-08: ChatGPT false (medium), Meta AI false (high), Gemini mixed (medium: the consumer default is off in the EU, UK and Switzerland and on elsewhere); Gemini analyst and Evaluator rerun 2026-11-09 after the grading rule dropped "account type" | three product claims from the existing criterion `no-training-on-user-data`, for `products/chatgpt`, `products/gemini` and a new `products/meta-ai` (B, 2026-11-08); the inverted, US-scoped sentence became a claim of its own on 2026-11-09 (rank 10 below), superseding the note that the summary sentence was not one | P2: the strongest individual-side elephant; the reader can act on it the same day | approve all three as the comparison rows (ChatGPT false, Meta AI false, Gemini mixed with the regional default explained); rank 10 carries the lesson |
