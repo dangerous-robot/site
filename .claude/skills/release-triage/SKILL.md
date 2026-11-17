@@ -147,7 +147,7 @@ git log --oneline "$last"..HEAD | wc -l                              # commits n
 git diff --name-only "$last"..HEAD -- research pipeline src/pages/research scripts/scheduled-recheck.sh .github/workflows/recheck.yml
 ```
 
-```
+```text
 ## Release status: beta.N (in progress)
 Recap: {Ready to release | Not ready to release}. {d} of {n} items done, {w} waiting on you or the release, {s} not started. Live site is {version on VERSION.md line 1} (tagged {date}); {c} commits since then are local only.
 Beta size: {n} open entries, limit 5.
