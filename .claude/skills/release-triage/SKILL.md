@@ -1,6 +1,6 @@
 ---
 name: release-triage
-description: "Classify a proposed code change against VERSION.md semver rules, decide which release it belongs to (the in-flight line, the next minor, the next major, or Unscheduled), update the roadmap or UNSCHEDULED.md accordingly, and register the active work item so the release gate allows edits. Use before any new feature, schema, or behavior change; when the user starts describing or coding work that is not in the active roadmap; or when the release gate denies an edit. Also use to answer what to work on next (§ Choosing the next item) and to triage the backlog in docs/UNSCHEDULED.md against docs/priorities.md (§ Backlog triage): when a beta or release ships, when the priority order changes, or when asked."
+description: "Classify a proposed code change against VERSION.md semver rules, decide which release it belongs to (the in-flight line, the next minor, the next major, or Unscheduled), update the roadmap or UNSCHEDULED.md accordingly, and register the active work item so the release gate allows edits. Use before any new feature, schema, or behavior change; when the user starts describing or coding work that is not in the active roadmap; or when the release gate denies an edit. Also use to answer what to work on next (§ Choosing the next item) and to triage the backlog in docs/UNSCHEDULED.md against docs/priorities.md (§ Backlog triage): when a beta or release ships, when the priority order changes, or when asked. Also use to report where the release stands (§ Reporting release status): \"what's the status of the release\", \"release status\"."
 ---
 
 # Release triage
@@ -9,7 +9,7 @@ The repo has three mutually exclusive work states (AGENTS.md § Release planning
 
 This skill is the judgment step. Do it in the conversation, with full context, then record the result. Keep it to one short exchange: the goal is "Great, this is a minor feature; I've put it in the next release so it doesn't widen the in-flight beta. Here is the plan outline", not a ceremony.
 
-Steps 1 to 5 handle a change someone asked for or a denied edit; § Choosing the next item and § Backlog triage are the other two uses (flow: AGENTS.md § Priorities).
+Steps 1 to 5 handle a change someone asked for or a denied edit; § Choosing the next item, § Reporting release status and § Backlog triage are the other uses (flow: AGENTS.md § Priorities).
 
 ## Step 1: Read the state (no guessing)
 
@@ -136,6 +136,45 @@ Answer in this form:
 > **Next:** {ID (name)}, starting with {first step}. **Why:** rank {N} theme "{theme}"; beta.{M} has {n} open entries (limit 5). **Operator decides:** {each decision named above, or "nothing"}.
 
 Also say whether § Backlog triage is due; the answer does not wait for it.
+
+## Reporting release status
+
+Answers "what's the status of the release?" in one fixed form. It reads the Step 1 state plus the two commands below, and changes nothing.
+
+```bash
+last="$(git describe --tags --abbrev=0)"
+git log --oneline "$last"..HEAD | wc -l                              # commits not yet live (local refs; no fetch)
+git diff --name-only "$last"..HEAD -- research pipeline src/pages/research
+```
+
+```
+## Release status: beta.N (in progress)
+Recap: {Ready to release | Not ready to release}. {d} of {n} items done, {w} waiting on you or the release, {s} not started. Live site is {version on VERSION.md line 1} (tagged {date}); {c} commits since then are local only.
+Beta size: {n} open entries, limit 5.
+
+### Site pages (not beta-labeled): {can ship now as beta.M.1 | waits for beta.N because main holds research or pipeline changes}
+### Research pages and pipeline (beta, ships with beta.N)
+### Tooling (nothing a reader sees)
+- ID (Name): {state}. {One plain sentence: what is committed, or the one step left and who takes it.}
+
+### Research content (claims and drafts)
+- Published / Ready for your sign-off / Held / Your decision: a count each, one line each
+
+Left before beta.N: {each open entry as ID (Name) plus its next step}
+Roadmap lines that look stale: {only when found}
+```
+
+Rules:
+
+- **Which items.** Every item named on the `**Next beta (beta.N):**` and `**Site (ships any time):**` lines of the roadmap's `## Plan`, open or "Done on `main`". The size line counts open entries on the beta line ("Release size" above).
+- **Groups.** Group by what a reader sees, not by ID prefix. A normal page goes under Site. A page under `/research`, pipeline code, or an item that touches both kinds goes under the beta group, listed once. An item with nothing a reader sees (CI, credentials) goes under Tooling. Leave out an empty group.
+- **Site heading.** If the `git diff` above lists any file, or a claim or verdict shown on a normal page changed (`docs/runbook.md` § Releasing, "Which kind of push"), the site group waits for the beta; say which paths decided it. If it lists none, the site group can ship now as a site push.
+- **State.** From the item's `**Status**` line and its unticked checklist lines: `done`, `absorbed` and `retired` read "done"; `in progress` with only an operator step left reads "waiting on you", with only a release or deploy step left reads "waiting on the release"; other `in progress` reads "in progress"; `ready` and `plan needed` read "not started"; `decision needed` reads "needs your decision"; `deferred` is left out. When the Status line and the checklist disagree, use the checklist and report the line as stale.
+- **Order within a group.** Waiting on you, needs your decision, waiting on the release, in progress, not started, done.
+- **Done is not live.** Done means committed. Say "not yet live" until its release is tagged.
+- **Research content.** Always shown, as counts from the Status line and the queue table of `docs/research-content.md`. Name a held draft's blocker when it is a roadmap item. Detail stays in that file.
+- **Stale lines.** One line, only when a roadmap line contradicts itself or the repo. Offer the fix; do not make it inside a status answer.
+- **Wording.** Every ID carries its name. Each item is one sentence a reader can follow without the roadmap open; spell out who does the step and whether it costs a paid run.
 
 ## Backlog triage
 
