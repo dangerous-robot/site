@@ -1,0 +1,467 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-11-09T06:09:33.541966+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+  run_id: fd9e6c17d6b14e7481d11b922f5cd82a
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  rejected:
+  - url: https://technologist.mit.edu/statement-on-ai-risk
+    title: '"Statement on AI Risk"'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.gov.uk/government/publications/frontier-ai-capabilities-and-risks-discussion-paper/future-risks-of-frontier-ai-annex-a
+    title: Future risks of frontier AI (Annex A) - GOV.UK
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.youtube.com/watch?v=-Xog7fJwkzE
+    title: '🔴 LIVE: AI CEOs Brief UN Security Council | Sam Altman, Demis Hassabis
+      & Dario Amodei on AI Risks'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.instagram.com/popular/openai-anthropic-google-deepmind-announcement-march-2026
+    title: Openai Anthropic Google Deepmind Announcement March 2026
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.anthropic.com/policy-on-the-ai-exponential
+    title: Policy on the AI Exponential \ Anthropic
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.youtube.com/watch?v=QqESBXuo6EI
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.dynamitenews.com/technology/openai-anthropic-and-google-deepmind-to-unveil-major-ai-models
+    title: OpenAI, Anthropic and Google DeepMind to unveil major AI Models | Dynamite
+      News
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://casrai.org/guides/frontier-ai-safety-timeline
+    title: 'Frontier AI Safety Timeline: 2023-2026 — CASRAI'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://casrai.org/guides/seoul-frontier-ai-safety-commitments
+    title: 'Seoul AI Safety Commitments: Signatory List — CASRAI'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://internationalaisafetyreport.org/about
+    title: About | International AI Safety Report
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.businessinsider.com/openai-employee-letter-google-deepmind-ai-risks-protections-2024-6
+    title: OpenAI Employees Sign Letter Demanding Change - Business Insider
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://montrealethics.ai/ai-policy-corner-frontier-ai-safety-commitments-ai-seoul-summit-2024
+    title: 'AI Policy Corner: Frontier AI Safety Commitments, AI Seoul Summit 2024
+      | Montreal AI Ethics Institute'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://forum.effectivealtruism.org/posts/LxuKuQd69Qx5FKhNZ/survey-of-ai-safety-leaders-on-x-risk-agi-timelines-and
+    title: Survey of AI safety leaders on x-risk, AGI timelines, and resource allocation
+      (Feb 2026) — EA Forum
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.gov.uk/government/publications/frontier-ai-safety-commitments-ai-seoul-summit-2024/frontier-ai-safety-commitments-ai-seoul-summit-2024
+    title: Frontier AI Safety Commitments, AI Seoul Summit 2024 - GOV.UK
+    score: null
+    reason: scored below 3 on every sub-question
+  queries:
+  - OpenAI Sam Altman Anthropic Dario Amodei Google DeepMind Demis Hassabis extinction
+    risk statement 2023
+  - frontier AI companies global priority extinction risk pledge 2023
+  - official statement OpenAI Anthropic DeepMind AI extinction risks March 2023
+  - retraction disputed signatories AI extinction risk statement 2023
+  - AI safety commitments on global extinction risk verified signatures 2023
+  planner_rationale: The decomposition covers the claim by addressing the content
+    of the statement (sq1), broader context (sq2), and verification from the entities
+    involved (sq3), while explicitly seeking contradictions or falsifications (sq4).
+  candidates_seen: 34
+  urls_kept: 17
+  urls_dropped: 14
+  scorer_rationale: Most candidates directly addressed the central claim by providing
+    explicit details about the **exact statement text**, its **signatories (OpenAI,
+    Anthropic, Google DeepMind)**, and the **2023 date**, making them highly relevant
+    for **sq1, sq2, and sq3**. Candidates like **Wikipedia, Business Insider, CAIS
+    press releases, and NY Times** scored highest due to their comprehensive snippets,
+    including the verbatim statement and confirmed signatories. Smaller gaps exist
+    for **sq4 (evidence of disputes)**, but the **arXiv preprint** and references
+    to later controversies (e.g., Coxon’s resignation) provide tangential support.
+    Drops primarily targeted irrelevant timeframes (e.g., **2024/2026 updates**) or
+    non-source material like **forum-driven speculation (Instagram, EA Forum) or tangential
+    policy discussions (Unrelated government papers)**.
+  urls_after_blocklist: 15
+sub_questions:
+- id: sq1
+  question: What was the exact name and content of the public statement or pledge
+    signed by the heads of OpenAI, Anthropic, and Google DeepMind in 2023 regarding
+    AI extinction risks?
+  rationale: This covers the claim's central event and ensures we capture the precise
+    language and commitments made.
+  kind: coverage
+  queries:
+  - OpenAI Sam Altman Anthropic Dario Amodei Google DeepMind Demis Hassabis extinction
+    risk statement 2023
+  - frontier AI companies global priority extinction risk pledge 2023
+  citations:
+  - 2023/statementonaiextinctionrisk
+  - 2023/231020563v2
+  - 2023/ai-extinction-risk-openai-deepmind-anthropic-ceos-sam-altman-2023-5
+  - 2023/press-release-ai-risk
+  - 2023/statement-on-ai-extinction-risk
+  - 2023/statement-on-ai-extinction-signed-by-agi-labs-top-academics
+  - 2023/ai-poses-human-extinction-risk-sam-altman-and-other-tech-leaders-warnhtml
+  - 2023/artificial-intelligence-extinction-risk-16859118
+  snippet_only: []
+- id: sq2
+  question: Which organizations or initiatives explicitly referenced AI extinction
+    risks as a 'global priority' in 2023?
+  rationale: This checks for broader recognition or alignment with the claim beyond
+    the specific entity mentioned.
+  kind: coverage
+  queries: []
+  citations:
+  - 2023/statementonaiextinctionrisk
+  - 2023/statement-on-ai-extinction-signed-by-agi-labs-top-academics
+  snippet_only:
+  - 2023/ai-extinction-risk-openai-deepmind-anthropic-ceos-sam-altman-2023-5
+  - 2023/press-release-ai-risk
+  - 2023/statement-on-ai-extinction-risk
+  - 2023/ai-poses-human-extinction-risk-sam-altman-and-other-tech-leaders-warnhtml
+  - 2023/artificial-intelligence-extinction-risk-16859118
+- id: sq3
+  question: Are there published transcripts, press releases, or official documents
+    from OpenAI, Anthropic, and Google DeepMind confirming a joint statement on AI
+    extinction risks in 2023?
+  rationale: This verifies first-party confirmations of the claim from the involved
+    entities.
+  kind: coverage
+  queries:
+  - official statement OpenAI Anthropic DeepMind AI extinction risks March 2023
+  citations:
+  - 2023/statementonaiextinctionrisk
+  - 2023/press-release-ai-risk
+  - 2023/statement-on-ai-extinction-risk
+  - 2023/statement-on-ai-extinction-signed-by-agi-labs-top-academics
+  snippet_only:
+  - 2023/ai-extinction-risk-openai-deepmind-anthropic-ceos-sam-altman-2023-5
+- id: sq4
+  question: What evidence or disputes exist regarding the March 2023 signatories or
+    authenticity of the AI extinction risk statement?
+  rationale: This seeks to falsify the claim by identifying contradictions or retraction.
+  kind: counter-evidence
+  queries:
+  - retraction disputed signatories AI extinction risk statement 2023
+  - AI safety commitments on global extinction risk verified signatures 2023
+  citations:
+  - 2023/231020563v2
+  snippet_only: []
+sources_consulted:
+- id: 2023/statementonaiextinctionrisk
+  url: https://en.wikipedia.org/wiki/Statement_on_AI_Extinction_Risk
+  title: Statement on AI Extinction Risk
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Mitigating the risk of extinction from AI should be a global priority alongside
+      other societal-scale risks such as pandemics and nuclear war.
+    found: true
+    checked_against: page
+    passage: Risk**:[[1]](#cite_note-Center_for_AI_Safety-2023-1)[[2]](#cite_note-Roose-2023-2)[[3]](#cite_note-Gregg-2023-3)
+      > Mitigating the risk of extinction from AI should be a global priority alongside
+      other societal-scale risks such as pandemics and nuclear war. At the time of
+      the statement's release, the signatories included over 100 professors of
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: OpenAI Sam Altman Anthropic Dario Amodei Google DeepMind Demis Hassabis
+      extinction risk statement 2023
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2023/231020563v2
+  url: https://arxiv.org/html/2310.20563v2
+  title: 'Taking Control: Policies to Address Extinction Risks from Advanced AI'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Mitigating the risk of extinction from AI should be a global priority alongside
+      other societal-scale risks such as pandemics and nuclear war
+    found: true
+    checked_against: page
+    passage: '2023). ## 2 Introduction ### 2.1 Extinction risks from advanced AI Advanced
+      AI poses an extinction risk to humanity. Leading AI researchers, alongside the
+      CEOs of the three main advanced AI companies, all have recently signed a statement
+      acknowledging: "Mitigating the risk of extinction from AI should be a global
+      priority alongside other societal-scale risks such as pandemics and nuclear
+      war" (Center for AI Safety, 2023). Sam Altman, CEO of OpenAI, stated that the
+      bad case from AI is "lights out for all of us" (Altman, 2023). Dario Amodei,'
+  - text: 'I will refer to it as what is: God-like AI. A superintelligent computer
+      that learns and develops autonomously... could usher in the obsolescence or
+      destruction of the human race.'
+    found: true
+    checked_against: page
+    passage: 'below an acceptable level. The first step toward this future involves
+      engaging in international coordination. "I will refer to it as what is: God-like
+      AI. A superintelligent computer that learns and develops autonomously, that
+      understands its environment without the need for supervision and that can transform
+      the world around it. God-like AI could be a force beyond our control or understanding,
+      and one that could usher in the obsolescence or destruction of the human race."
+      - Hogarth (2023) ### 2.2 The UK AI Safety Summit: A Pivotal Moment "It felt
+      deeply wrong that consequential'
+  - text: '"Responsible scaling" sounds like it came from the same lobbying firm that
+      coined "clean coal."'
+    found: true
+    checked_against: page
+    passage: 'Voluntary commitments and "responsible capabilities scaling" policies:
+      solutions that do not address extinction risks "Responsible scaling" sounds
+      like it came from the same lobbying firm that coined "clean coal." - Tegmark
+      (2023) Responsible Scaling Policies (RSPs) are proposals suggesting voluntary
+      commitments on internal'
+  - text: Many of the world’s leading AI experts now think that human-level (or even
+      more capable) AI could arrive before 2030.
+    found: true
+    checked_against: page
+    passage: 'regularly discovered long after they are deployed to millions of people.
+      ## 4 The way forward: Policy recommendations "Many of the world''s leading AI
+      experts now think that human-level (or even more capable) AI could arrive before
+      2030. Regardless of the exact timelines, it''s clear that unelected tech leaders
+      should not decide whether, when, how and for'
+  - text: Extinction risks from advanced AI arise chiefly from “scaling”—building
+      increasingly large, autonomous, and opaque AI systems.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: frontier AI companies global priority extinction risk pledge 2023
+- id: 2023/ai-extinction-risk-openai-deepmind-anthropic-ceos-sam-altman-2023-5
+  url: https://www.businessinsider.com/ai-extinction-risk-openai-deepmind-anthropic-ceos-sam-altman-2023-5
+  title: CEOs of OpenAI, DeepMind, and Anthropic warn of AI extinction risk
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Mitigating the risk of extinction from AI should be a global priority alongside
+      other societal-scale risks such as pandemics and nuclear war.
+    found: true
+    checked_against: page
+    passage: 'Amodei have all signed the public statement, which compared the risks
+      posed by AI with nuclear war and pandemics. The CAIS statement reads: "Mitigating
+      the risk of extinction from AI should be a global priority alongside other societal-scale
+      risks such as pandemics and nuclear war." AI experts including Geoffrey Hinton
+      and Yoshua Bengio are among the statement''s signatories, along with executives
+      at'
+  - text: Artificial intelligence will have a transformative impact on society and
+      it's essential that we recognize the potential opportunities, risks and downsides
+      enabled by it.
+    found: true
+    checked_against: page
+    passage: 'for Altman and Amodei did not immediately respond to Insider''s request
+      for comment, made outside normal working hours. DeepMind told Insider in a statement:
+      "Artificial intelligence will have a transformative impact on society and it''s
+      essential that we recognize the potential opportunities, risks and downsides
+      enabled by it." It added that it was committed to developing AI responsibly,
+      as guided by its AI Principles. It also highlighted its'
+  acquisition:
+    stage: research
+    origin: tavily
+    query: OpenAI Sam Altman Anthropic Dario Amodei Google DeepMind Demis Hassabis
+      extinction risk statement 2023
+- id: 2023/press-release-ai-risk
+  url: https://safe.ai/work/press-release-ai-risk
+  title: AI Extinction Statement Press Release
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Mitigating the risk of extinction from AI should be a global priority alongside
+      other societal-scale risks such as pandemics and nuclear war.
+    found: true
+    checked_against: page
+    passage: 'statement](https://www.safe.ai/statement-on-ai-risk) from the [Center
+      for AI Safety](https://www.safe.ai/) that reads: > *"Mitigating the risk of
+      extinction from AI should be a global priority alongside other societal-scale
+      risks such as pandemics and nuclear war."* This represents a historic coalition
+      of AI experts - along with philosophers, ethicists, legal scholars, economists,'
+  - text: “We need to be having the conversations that nuclear scientists were having
+      before the creation of the atomic bomb,” said Dan Hendrycks.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: “It’s not too early to put guardrails in place and set up institutions so
+      that AI risks don’t catch us off guard.”
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: OpenAI Sam Altman Anthropic Dario Amodei Google DeepMind Demis Hassabis
+      extinction risk statement 2023
+- id: 2023/statement-on-ai-extinction-risk
+  url: https://aistatement.com/work/statement-on-ai-extinction-risk
+  title: Statement on AI Extinction Risk
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Mitigating the risk of extinction from AI should be a global priority alongside
+      other societal-scale risks such as pandemics and nuclear war.
+    found: true
+    checked_against: page
+    passage: 'of experts and public figures who also take some of advanced AI''s most
+      severe risks seriously. #### The statement: ### Mitigating the risk of extinction
+      from AI should be a global priority alongside other societal-scale risks such
+      as pandemics and nuclear war. #### Signatories: Thank you! Your submission has
+      been received! Oops! Something went wrong while submitting the'
+  acquisition:
+    stage: research
+    origin: tavily
+    query: official statement OpenAI Anthropic DeepMind AI extinction risks March
+      2023
+- id: 2023/statement-on-ai-extinction-signed-by-agi-labs-top-academics
+  url: https://www.lesswrong.com/posts/HcJPJxkyCsrpSdCii/statement-on-ai-extinction-signed-by-agi-labs-top-academics
+  title: Statement on AI Extinction Signed by AGI Labs, Top Academics
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Mitigating the risk of extinction from AI should be a global priority alongside
+      other societal-scale risks such as pandemics and nuclear war.
+    found: true
+    checked_against: page
+    passage: 'Altman, Demis Hassabis, and Dario Amodei-as well as executives from
+      Microsoft and Google (but notably not Meta). The statement reads: **"Mitigating
+      the risk of extinction from AI should be a global priority alongside other societal-scale
+      risks such as pandemics and nuclear war."** We hope this statement will bring
+      AI x-risk further into the overton window and open up discussion around AI''s
+      most'
+  acquisition:
+    stage: research
+    origin: tavily
+    query: OpenAI Sam Altman Anthropic Dario Amodei Google DeepMind Demis Hassabis
+      extinction risk statement 2023
+- id: 2023/ai-poses-human-extinction-risk-sam-altman-and-other-tech-leaders-warnhtml
+  url: https://www.cnbc.com/amp/2023/05/31/ai-poses-human-extinction-risk-sam-altman-and-other-tech-leaders-warn.html
+  title: AI Poses Human Extinction Risk, Tech Leaders Warn
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Mitigating the risk of extinction from AI should be a global priority alongside
+      other societal-scale risks such as pandemics and nuclear war,
+    found: true
+    checked_against: page
+    passage: associated with the technology should be a global priority, industry
+      experts and tech leaders said in an open letter. "Mitigating the risk of extinction
+      from AI should be a global priority alongside other societal-scale risks such
+      as pandemics and nuclear war," the statement Tuesday read. Sam Altman, CEO of
+      ChatGPT-maker OpenAI, as well as executives from Google's AI arm DeepMind and
+      Microsoft were among
+  - text: Should we automate away all the jobs, including the fulfilling ones? Should
+      we develop nonhuman minds that might eventually outnumber, outsmart, obsolete
+      and replace us?
+    found: true
+    checked_against: page
+    passage: advanced development. "Contemporary AI systems are now becoming human-competitive
+      at general tasks," said the letter. "Should we automate away all the jobs, including
+      the fulfilling ones? Should we develop nonhuman minds that might eventually
+      outnumber, outsmart, obsolete and replace us? Should we risk loss of control
+      of our civilization?" the letter asked. Last week, Schmidt also separately warned
+      about
+  acquisition:
+    stage: research
+    origin: tavily
+    query: frontier AI companies global priority extinction risk pledge 2023
+- id: 2023/artificial-intelligence-extinction-risk-16859118
+  url: https://www.cbc.ca/news/world/artificial-intelligence-extinction-risk-1.6859118
+  title: Artificial Intelligence Poses 'Risk of Extinction,' Experts Warn
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"Mitigating the risk of extinction from AI should be a global priority
+      alongside other societal-scale risks such as pandemics and nuclear war."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: That could escalate and, like the nuclear arms race, potentially bring us
+      to the brink of catastrophe,
+    found: true
+    checked_against: page
+    passage: the industry has led to a sort of "AI arms race," CAIS executive director
+      Dan Hendrycks told CBC News in an interview. "That could escalate and, like
+      the nuclear arms race, potentially bring us to the brink of catastrophe," he
+      said, suggesting humanity "could go the way of the Neanderthals." Recent developments
+      in AI have created tools supporters say can be used in applications from medical
+      diagnostics to
+  - text: '"We are creating intelligent entities. Are they going to behave well with
+      us? There are a lot of questions that are very, very concerning and there''s
+      too much unknown."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: retraction disputed signatories AI extinction risk statement 2023
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: true
+  auditor_reasoning: Business Insider reports a joint statement by the CEOs of OpenAI,
+    DeepMind, and Anthropic, confirming they signed the statement that frames AI extinction
+    risk as a global priority. The CAIS press release lists Sam Altman and Demis Hassabis
+    among the signatories, and the Wikipedia article references the statement and
+    Sam Altman's signature. No sources contradict the claim, providing multiple independent
+    confirmations.
+  evidence_gaps:
+  - The CAIS press release does not explicitly name the Anthropic CEO, though Business
+    Insider does.
+  - Wikipedia article only mentions Sam Altman explicitly; it does not list the other
+    two CEOs.
+  needs_review_reasons:
+  - 2+ evidence gaps
+  pipeline_verdict: 'true'
+  pipeline_confidence: high
+  rule_applied: agreed
+human_review:
+  reviewed_at: '2026-11-17'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null
+  verdict_override: null
+analyst_record:
+  title: In 2023 the heads of OpenAI, Anthropic and Google DeepMind signed a statement
+    calling extinction risk from AI a global priority.
+  seo_title: OpenAI, Anthropic, DeepMind sign AI risk
+  verdict: 'true'
+  takeaway: Top AI lab CEOs jointly flagged AI extinction as a global priority in
+    2023.
+  cap_rationale: null
+  uncited_by_title:
+  - 2023/ai-extinction-risk-openai-deepmind-anthropic-ceos-sam-altman-2023-5
+  - 2023/press-release-ai-risk

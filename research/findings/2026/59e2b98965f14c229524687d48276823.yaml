@@ -1,0 +1,38 @@
+run_id: 59e2b98965f14c229524687d48276823
+date: 2026-11-08
+command: dr draft
+claim_spec:
+  statement: By 2025 courts had caught lawyers citing AI-invented cases in over a
+    hundred filings, and some were fined.
+  entity: subjects/generative-ai
+  criteria_slug: null
+  topics: []
+  grading_rule: null
+claim_ref: subjects/generative-ai/by-2025-courts-had-caught-lawyers-citing-ai-invented-cases-in-over-a-hundred-filings-and-some-were-fined
+config:
+  max_sources: 8
+  candidate_pool_size: 32
+  max_initial_queries: 7
+  search_backend: tavily
+  research_origins:
+  - tavily
+  - arxiv
+  model: greenpt:gpt-oss-120b
+  skip_wayback: false
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+  tiebreaker: greenpt:gpt-oss-120b
+  restater: greenpt:gpt-oss-120b
+step: tiebreak
+rule: tiebreaker
+error:
+  error_type: verdict_split
+  message: analyst mixed, evaluator mostly-false, tie-breaker unverified
+attempts: 1
+outcome: split
+retries: []
+replays: null
+closed: null

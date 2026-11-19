@@ -1,0 +1,620 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-11-17T20:18:22.116593+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+  run_id: 4620e277b07d46d9a16f924f37134a68
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  rejected:
+  - url: https://discuss.ai.google.dev/t/grounding-free-quota-clarifying-2026-rules-for-gemini-2-5-flash-paid-tier-1/144593
+    title: Grounding free quota — clarifying 2026 rules for Gemini 2.5 Flash (paid
+      Tier 1) - Gemini API - Google AI Developers Forum
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.facebook.com/groups/lifeboatfoundation/posts/10164978635758455
+    title: Lifeboat Foundation | Google has just released a technical report detailing
+      how much energy its Gemini apps use for each query | Facebook
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://discuss.ai.google.dev/t/grounding-with-google-search-5-000-free-prompts-month-is-the-quota-scoped-per-project-or-per-billing-account/134866
+    title: 'Grounding with Google Search – 5,000 free prompts/month: is the quota
+      scoped per project or per billing account? - Gemini API - Google AI Developers
+      Forum'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.facebook.com/quartznews/posts/your-ai-prompt-costs-five-drops-of-water-and-a-fraction-of-a-wattgoogle-just-pub/1480303510632129
+    title: Your AI prompt costs five drops of water and a fraction of a watt ...
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.linkedin.com/posts/emollick_we-now-have-multiple-sources-of-data-on-the-activity-7364517118509256704-Uvrd
+    title: Ethan Mollick's Post - LinkedIn
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.reddit.com/r/climate/comments/1mwdq9d/in_a_first_google_has_released_data_on_how_much
+    title: In a first, Google has released data on how much energy an AI ...
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://adi-analytics.com/2025/08/27/the-real-energy-cost-of-ai-lessons-from-google
+    title: 'The real energy cost of AI: Lessons from Google'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.technologyreview.com/2025/08/21/1122288/google-gemini-ai-energy
+    title: In a first, Google has released data on how much energy an AI prompt uses
+      | MIT Technology Review
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.reddit.com/r/MachineLearning/comments/1pzg7ed/d_ironwolf_tpu_versus_blackwell_for_inference
+    title: '[D] Ironwolf TPU versus Blackwell for inference efficiency?'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.linkedin.com/posts/billjiagoogle_tpu-inference-performance-benchmark-in-activity-7502936683525378048-VzIt
+    title: TPU Inference Performance Benchmark In the past, I mentioned that the entire
+      Gemini model journey from pre-training, mid-training, post-training and inference
+      is 100% on TPU. Many have asked what… | Bill Jia | 10 comments
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://xenospectrum.com/en/pixel-11-tensor-g6-tpu-compute-on-device-ai
+    title: 'How Tensor G6 Changes Pixel 11: Reading the Official Figures for TPU and
+      Gemini Nano | XenoSpectrum'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.businessinsider.com/google-gemini-usage-surging-rivals-chatgpt-meta-dominating-2025-4
+    title: Google's Gemini Usage Is Surging, but Rivals Still Dominating - Business
+      Insider
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.businessinsider.com/google-gemini-usage-surging-rivals-chatgpt-meta-dominating-2025-4?IR=T
+    title: Google's Gemini Usage Is Surging, but Rivals Still Dominating - Business
+      Insider
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.linkedin.com/pulse/first-google-has-released-data-how-much-energy-ai-pxfxe
+    title: In a first, Google has released data on how much energy an AI prompt uses
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.facebook.com/feeonline/posts/googles-new-transparency-about-the-energy-use-of-its-gemini-ai-reveals-/1301903751977839
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.linkedin.com/posts/benedictevans_measuringtheenvironmentalimpactofdeliveringaiatgooglescalepdf-activity-7364278970978058242-HHgf
+    title: 'Gemini''s energy efficiency: 0.24 Wh for a text query. | Benedict Evans
+      posted on the topic | LinkedIn'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://greenly.earth/en-us/leaf-media/data-stories/ai-efficiency-a-gemini-reality-check-with-greenly
+    title: 'AI Efficiency: A Gemini Reality Check with Greenly - Greenly'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.enlit.world/library/energy-and-water-use-of-google-s-ai-is-less-than-thought
+    title: Energy and water use of Google AI – less than thought | Enlit World
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://thepromptinsider.com/news/google-frozen-v2-chip-gemini-efficiency
+    title: Google's "Frozen v2" Chip Could Make Gemini 10x More Efficient
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.youtube.com/watch?v=2_DPnzoiHaY
+    title: 'Gemini 3.1 Pro and the Downfall of Benchmarks: Welcome to the Vibe Era
+      of AI'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.linkedin.com/posts/ianjoubertai_ai-gemini3-tpu-activity-7398229870142676992-mqLd
+    title: 'Why Gemini 3.0 is a Game Changer: TPUs vs. GPUs | Ian Joubert posted on
+      the topic | LinkedIn'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.thealgorithmicbridge.com/p/google-gemini-3-just-killed-every
+    title: Google Gemini 3 Is the Best Model Ever. One Score Stands Out Above the
+      Rest
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://medium.com/according-to-context/gemini-3-first-impressions-benchmarks-including-deep-think-40a00a622e8d
+    title: Gemini 3 Pro First Impressions & Benchmarks (Including Deep Think)
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://discuss.ai.google.dev/t/subject-feature-suggestion-eco-mode-model-efficiency-transparency-for-gemini/184311
+    title: 'Subject: Feature Suggestion: "Eco Mode" & Model Efficiency Transparency
+      for Gemini - Gemini API - Google AI Developers Forum'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://discuss.ai.google.dev/t/gemini-3-x-search-grounding-free-usage-not-included-anymore/167664
+    title: Gemini 3.x Search Grounding - free usage not included anymore? - Gemini
+      API - Google AI Developers Forum
+    score: null
+    reason: scored below 3 on every sub-question
+  queries:
+  - Google Gemini energy consumption per text prompt documentation
+  - Gemini 0.24 Wh per prompt official source
+  - third-party energy benchmarks Gemini vs LLMs
+  - academic studies Gemini model efficiency watt-hours
+  - Gemini TPU energy optimization per inference
+  - Google Gemini energy usage correction transparency report
+  planner_rationale: The sub-questions cover Google's first-party claims (sq1), independent
+    validation (sq2), technical mechanisms (sq3), and potential retractions or updates
+    (sq4). The queries span these axes while avoiding non-relevant terms like 'machine
+    learning' and adhering to Brave's query format.
+  candidates_seen: 51
+  urls_kept: 20
+  urls_dropped: 25
+  scorer_rationale: '''Google Gemini'' first-party documentation (sq1):
+
+    - URLs like `cloud.google.com/blog/products/infrastructure/measuring-the-environmental-impact-of-ai-inference`
+    (score: 5, **primary**) and `services.google.com/fh/files/misc/measuring_the_environmental_impact_of_delivering_ai_at_google_scale.pdf`
+    (score: 5, **primary**) provide Google''s official methodology for measuring Gemini’s
+    per-prompt energy use, including the 0.24 Wh figure summarized in their technical
+    report. These are undisputed first-party sources.
+
+    - `tech.yahoo.com` and `bgr.com` (both **secondary**) repeat the claim but lack
+    technical depth or methodology (score: 4 for sq1, as they cite Google’s report).
+
+
+    Third-party benchmarks/studies (sq2):
+
+    - `greencalculus.com` (**secondary**) compares Gemini’s 0.24 Wh to other models
+    and contextualizes it with third-party normalization.
+
+    - `arxiv.org` and `springer.com` (**secondary**) provide comparative studies on
+    LLM energy efficiency, though they rarely mention Gemini specifically.
+
+    - Self-published blogs (`hannahritchie.substack.com`, `medium.com/@adnanmasood`)
+    often reference Google’s first-party data but add third-party commentary (score:
+    4 for sq2/sq4).
+
+
+    Hardware infrastructure mechanisms (sq3):
+
+    - `cloud.google.com/blog` (**primary**) and `services.google.com/fh/files/.../measuring_the_environmental_impact...`
+    (**primary**) break down hardware-specific contributions (58% TPUs/GPUs, 25% host
+    CPU, 17% overhead).
+
+    - Technical posts (`thepromptinsider.com`, `sparkco.ai`) discuss Google’s TPU
+    optimizations or emerging chips like Frozen v2 (score: 4 for sq3, as they infer
+    from known hardware vital data).
+
+    - Academic and self-reported comparisons (ArXiv, `Link.springer`) quantify benchmark
+    gaps but lack Gemini-specific technical insights (score: 3 max).
+
+
+    Transparency/updates (sq4):
+
+    - Reporters with secondary sources (`techuk.org`, `マイクロソフト` like `energysage.com`)
+    recap the August 2025 report’s 0.24 Wh figure as a *correction* of earlier public
+    estimates (4/5 will quickly reference it as authority).
+
+    - Silicon Valley tech writers (`cnet.com`, `MIT Technology Review`) emphasize
+    Google’s transparencyôadditionality, stressing recitation of a 33x efficiency-month
+    reduction or total 0.03g carbon-footprint in equivalence to product contextతర
+    assertions. Non-results in the نظ catered drop lower, per ''gold standard'' (forum/tertiary
+    categories).
+
+
+    Forum/web 2.0 posts (n/a):
+
+    - Link snippets on Reddit/Discord e.g.  `www.reddit.com/r/machinelearning/`) do
+    not discuss the model’s energy use or technical validations (all **forum**; dropped).
+    Same for `discuss.ai.google.dev` unless factual responses directly cite technical
+    papers.change_post_data (everyone must意为 the 0.24 Wh in the chain of evidence
+    and score only >=3).'
+  urls_after_blocklist: 20
+sub_questions:
+- id: sq1
+  question: Where does Google publish first-party documentation on the energy efficiency
+    of its Gemini model?
+  rationale: First-party sources like Google's official blog or AI sustainability
+    reports often detail technical specifics like energy consumption per inference.
+  kind: coverage
+  queries:
+  - Google Gemini energy consumption per text prompt documentation
+  - Gemini 0.24 Wh per prompt official source
+  citations:
+  - 2025/measuringtheenvironmentalimpactofdeliveringaiatgooglescalepdf
+  snippet_only:
+  - 2025/measuring-the-environmental-impact-of-ai-inference
+  - 2025/much-energy-does-google-gemini-201700431html
+  - 2026/how-much-energy-google-gemini-prompt-use
+- id: sq2
+  question: What third-party benchmarks or academic studies compare the energy consumption
+    of Gemini to other large language models per text prompt?
+  rationale: Third-party measurements provide independent validation or challenge
+    proprietary claims about efficiency.
+  kind: coverage
+  queries:
+  - third-party energy benchmarks Gemini vs LLMs
+  - academic studies Gemini model efficiency watt-hours
+  citations:
+  - 2025/measuringtheenvironmentalimpactofdeliveringaiatgooglescalepdf
+  - 2026/carbon-footprint-of-ai
+  - 2025/google-ai-energy-use-electric-bill-impact
+  - 2025/ai-footprint-august-2025
+  snippet_only:
+  - 2025/quantifying-energy-consumption-in-ai-systems-a-case-study-of-google-gemini-e711b1067ef6
+- id: sq3
+  question: How does Gemini's training pipeline or hardware infrastructure (e.g.,
+    TPU usage) contribute to its energy efficiency per prompt?
+  rationale: The underlying technical mechanisms (e.g., hardware, optimization techniques)
+    directly impact per-prompt energy use.
+  kind: coverage
+  queries:
+  - Gemini TPU energy optimization per inference
+  citations:
+  - 2025/measuring-the-environmental-impact-of-ai-inference
+  - 2025/measuringtheenvironmentalimpactofdeliveringaiatgooglescalepdf
+  - 2025/how-much-energy-do-your-ai-prompts-consume-google-just-shared-its-gemini-numbers
+  snippet_only: []
+- id: sq4
+  question: Has Google issued a transparency report or corrected its public claims
+    about Gemini's energy use since 2023?
+  rationale: Later updates or retractions could contradict the original claim of 0.24
+    watt-hours per prompt.
+  kind: counter-evidence
+  queries:
+  - Google Gemini energy usage correction transparency report
+  citations:
+  - 2026/carbon-footprint-of-ai
+  - 2025/how-much-energy-do-your-ai-prompts-consume-google-just-shared-its-gemini-numbers
+  - 2025/ai-footprint-august-2025
+  - 2025/quantifying-energy-consumption-in-ai-systems-a-case-study-of-google-gemini-e711b1067ef6
+  snippet_only: []
+sources_consulted:
+- id: 2025/measuring-the-environmental-impact-of-ai-inference
+  url: https://cloud.google.com/blog/products/infrastructure/measuring-the-environmental-impact-of-ai-inference
+  title: How much energy does Google’s AI use? We did the math
+  ingested: true
+  quotes:
+  - text: The median Gemini Apps text prompt uses 0.24 watt-hours (Wh) of energy,
+      emits 0.03 grams of carbon dioxide equivalent (gCO2e), and consumes 0.26 milliliters
+      of water — substantially lower than many public estimates.
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  - text: Over a recent 12-month period, the energy and total carbon footprint of
+      the median Gemini Apps text prompt dropped by 33x and 44x, respectively, while
+      delivering higher-quality responses.
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  - text: Measuring the footprint of AI serving workloads isn’t simple... Many current
+      AI energy consumption calculations only include active machine consumption,
+      overlooking several critical factors.
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  - text: Our comprehensive methodology’s estimates account for *all* critical elements
+      of serving AI globally, including idle machines, CPU, RAM, data center overhead,
+      and water consumption.
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google Gemini energy consumption per text prompt documentation
+- id: 2025/measuringtheenvironmentalimpactofdeliveringaiatgooglescalepdf
+  url: https://services.google.com/fh/files/misc/measuring_the_environmental_impact_of_delivering_ai_at_google_scale.pdf
+  title: Measuring the Environmental Impact of Delivering AI at Google Scale
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: The median Gemini Apps text prompt consumes **0.24 Wh of energy**—substantially
+      lower than many public estimates.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: We also show that Google’s software efficiency efforts and clean energy
+      procurement have driven a **33x reduction in energy consumption** and a **44x
+      reduction in carbon footprint** for the median Gemini Apps text prompt over
+      one year.
+    found: true
+    checked_against: page
+    passage: the median Gemini Apps text prompt consumes 0.24 Wh of energy-a figure
+      substantially lower than many public estimates. We also show that Google's software
+      efficiency efforts and clean energy procurement have driven a 33x reduction
+      in energy consumption and a 44x reduction in carbon footprint for the median
+      Gemini Apps text prompt over one year. We identify that the median Gemini Apps
+      text prompt uses less energy than watching nine seconds of television (0.24
+      Wh)
+  - text: The median Gemini Apps text prompt uses less energy than watching nine seconds
+      of television (0.24 Wh) and consumes the equivalent of five drops of water (0.26
+      mL).
+    found: true
+    checked_against: page
+    passage: in energy consumption and a 44x reduction in carbon footprint for the
+      median Gemini Apps text prompt over one year. We identify that the median Gemini
+      Apps text prompt uses less energy than watching nine seconds of television (0.24
+      Wh) and consumes the equivalent of five drops of water (0.26 mL). While these
+      impacts are low compared to other daily activities, reducing the environmental
+      impact of AI serving
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google Gemini energy consumption per text prompt documentation
+- id: 2026/carbon-footprint-of-ai
+  url: https://greencalculus.com/guides/carbon-footprint-of-ai
+  title: Carbon Footprint of AI
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: A typical AI text prompt uses about **0.24–0.34 Wh** of electricity, about
+      what a 10-watt LED bulb uses in one and a half to two minutes.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Google measured **0.03 g CO₂e** per median Gemini prompt in 2025.
+    found: true
+    checked_against: page
+    passage: '# How Much Energy Does AI Use? AI Energy Consumption and Carbon Footprint
+      Quick Answer A typical AI text prompt uses about **0.24-0.34 Wh** of electricity,
+      about what a 10-watt LED bulb uses in one and a half to two minutes; Google
+      measured 0.03 g [CO2e](https://greencalculus.com/glossary/co2e-carbon-dioxide-equivalent/)
+      per median Gemini prompt in 2025. In total, data centres focused on AI used
+      about **155 TWh in 2025**, a third of all data centre electricity, according'
+  - text: AI-focused data centres used about **155 TWh in 2025**, a third of all data
+      centre electricity, and their use is set to triple by 2030.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Published training footprints of models range from **24.7 t CO₂e** (BLOOM)
+      to **8,930 t CO₂e** (Llama 3.1 405B).
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: The IEA expects data-centre electricity use to more than double to about
+      **945 TWh by 2030**, driven mainly by AI.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google Gemini energy consumption per text prompt documentation
+- id: 2025/how-much-energy-do-your-ai-prompts-consume-google-just-shared-its-gemini-numbers
+  url: https://www.cnet.com/tech/services-and-software/how-much-energy-do-your-ai-prompts-consume-google-just-shared-its-gemini-numbers
+  title: How Much Energy Do Your AI Prompts Consume? Google Shares Its Gemini Findings
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: A single prompt’s energy consumption is about the equivalent of watching
+      TV for less than 9 seconds.
+    found: true
+    checked_against: page
+    passage: AI prompts. The impact of a single prompt is, it says, minuscule. According
+      to its methodology [for measuring AI's impact](https://cloud.google.com/blog/products/infrastructure/measuring-the-environmental-impact-of-ai-inference),
+      a single prompt's energy consumption is about the equivalent of watching TV
+      for less than 9 seconds. That's not a lot in a single serving, except when you
+      consider the variety of chatbots being used, with billions of
+  - text: '"Over the past 12 months, the energy of a single Gemini text prompt has
+      been reduced by 33x, and the total carbon footprint has been reduced by 44x."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: With more considerations in place, a Gemini text prompt uses 0.24Wh of energy,
+      0.26mL of water and emits 0.03 gCO2e — around double across the board.
+    found: true
+    checked_against: page
+    passage: 'grams of carbon dioxide equivalent. This is a promising number, but
+      Google''s wider methodology tells a different story. With more considerations
+      in place, a Gemini text prompt uses 0.24Wh of energy, 0.26mL of water and emits
+      0.03 gCO2e - around double across the board. ## Will new efficiencies keep up
+      with AI use? Through a multilayered series of efficiencies, Google is continually'
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google Gemini energy consumption per text prompt documentation
+- id: 2025/google-ai-energy-use-electric-bill-impact
+  url: https://www.energysage.com/news/google-ai-energy-use-electric-bill-impact
+  title: Your AI prompts come with an energy price tag—Google just revealed how high
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: 0.24 watt-hours (Wh) per median query—about the same as running your microwave
+      for one second.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Every Gemini query triggers this entire infrastructure cascade, including
+      AI chips, supporting hardware, backup systems, cooling, and power conversion.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Google estimates each Gemini query produces 0.03 grams of carbon dioxide,
+      though global AI energy demand may double by 2030, straining grids.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google Gemini energy consumption per text prompt documentation
+- id: 2025/ai-footprint-august-2025
+  url: https://hannahritchie.substack.com/p/ai-footprint-august-2025
+  title: 'AI Footprint: Carbon and Energy Use of ChatGPT and Gemini (August 2025 Update)'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: 个 pin individuals, even moderate use of LLMs is a very small part of their
+      carbon and energy footprint.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Generating video seems to be energy-hungry (nearly 1 kWh for a 5-second
+      video).
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: The median text query using Gemini uses 0.24 Wh of electricity, equivalent
+      to microwaving for 1 second.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Google estimates its median text query emits just 0.03 grams of CO2.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: The 3 Wh estimate in my previous article was probably too high; something
+      closer to 0.3 Wh seems realistic.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: third-party energy benchmarks Gemini vs LLMs
+- id: 2025/much-energy-does-google-gemini-201700431html
+  url: https://tech.yahoo.com/ai/articles/much-energy-does-google-gemini-201700431.html
+  title: How Much Energy Does Google Gemini Actually Use Per Prompt?
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"The demand for new data centers cannot be met in a sustainable way."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Google analyzed the median amount of energy used for text-based prompts
+      on its Gemini app: 0.24 watt-hours per prompt."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: A single prompt uses the same energy as watching less than nine seconds
+      of TV.
+    found: true
+    checked_against: page
+    passage: August 2025 showing what it claims is the low energy use for the average
+      text-based Gemini prompt. Reportedly, a single prompt uses the same energy as
+      watching less than nine seconds of TV. The report also emphasizes a message
+      of sustainability through future innovation. It's a hopeful message, but the
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google Gemini energy consumption per text prompt documentation
+- id: 2026/how-much-energy-google-gemini-prompt-use
+  url: https://bgr.com/1952572/how-much-energy-google-gemini-prompt-use
+  title: How Much Energy Does Google Gemini Actually Use Per Prompt?
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: a single prompt uses about 0.24 watt-hours
+    found: true
+    checked_against: page
+    passage: August 2025 showing what it claims is the low energy use for the average
+      text-based Gemini prompt. Reportedly, a single prompt uses about 0.24 watt-hours
+      of energy - the same as watching less than nine seconds of TV. The report also
+      emphasizes a message of sustainability through future innovation. It's a hopeful
+      message, but the
+  - text: emits 0.03 grams of carbon dioxide and uses 0.26 milliliters of water per
+      prompt
+    found: true
+    checked_against: page
+    passage: 'reality of creating and managing AI is complex, and overall, the numbers
+      for the future don''t seem to be promising. ## Gemini also emits 0.03 grams
+      of carbon dioxide and uses 0.26 milliliters of water per prompt ![Google data'
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google Gemini energy consumption per text prompt documentation
+- id: 2025/quantifying-energy-consumption-in-ai-systems-a-case-study-of-google-gemini-e711b1067ef6
+  url: https://medium.com/@adnanmasood/quantifying-energy-consumption-in-ai-systems-a-case-study-of-google-gemini-e711b1067ef6
+  title: 'Quantifying Energy Consumption in AI Systems: A Case Study of Google Gemini'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Google has, for the first time, released per-prompt energy, carbon, and
+      water usage data for its Gemini AI.
+    found: true
+    checked_against: page
+    passage: Share > **tl;dr -** Google has, for the first time, released **per-prompt
+      energy, carbon, and water usage data** for its Gemini AI. A median text query
+      consumes **0.24 Wh of electricity**, **0.03 g of CO2**, and **0.26 ml of water**.
+      While the numbers
+  - text: A median text query consumes 0.24 Wh of electricity, 0.03 g of CO₂, and
+      0.26 ml of water.
+    found: true
+    checked_against: page
+    passage: -** Google has, for the first time, released **per-prompt energy, carbon,
+      and water usage data** for its Gemini AI. A median text query consumes **0.24
+      Wh of electricity**, **0.03 g of CO2**, and **0.26 ml of water**. While the
+      numbers seem trivial per prompt, the scale of queries makes the impact significant.
+      Google's **full-stack
+  - text: Efficiency gains show energy per prompt has dropped 33× in one year.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: academic studies Gemini model efficiency watt-hours
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: low
+  auditor_confidence: low
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: true
+  auditor_reasoning: Google’s own blog post and technical report both state that the
+    median Gemini text prompt consumes 0.24 watt‑hours of electricity. Multiple independent
+    articles repeat this figure, but they do not provide original measurements, so
+    the evidence rests on Google’s self‑reported data. The claim matches the disclosed
+    median value, so it is supported, though confidence is limited because the source
+    pool consists only of self‑reported information.
+  evidence_gaps:
+  - No independent, third‑party measurement of Gemini’s per‑prompt energy use is provided.
+  - The claim references a “typical” prompt; sources report a median value, which
+    may not capture the full distribution of prompt energy use.
+  needs_review_reasons:
+  - 2+ evidence gaps
+  pipeline_verdict: 'true'
+  pipeline_confidence: low
+  rule_applied: agreed
+human_review:
+  reviewed_at: '2026-11-17'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null
+  verdict_override: null
+analyst_record:
+  title: Gemini uses about 0.24 watt-hours of electricity per typical text prompt.
+  seo_title: Gemini uses ~0.24 Wh per prompt
+  verdict: 'true'
+  takeaway: Google reports Gemini’s per‑prompt electricity use is as low as watching
+    a few seconds of TV.
+  cap_rationale: Confidence is capped at low -- all sources originate from entity
+    documentation; no independent source was found that conducts original analysis
+    of this claim.
+  uncited_by_title: []
+restates: subjects/generative-ai/a-typical-text-prompt-to-gemini-or-chatgpt-uses-about-a-third-of-a-watt-hour-of-electricity-a-couple-of-minutes-of-an-led-bulb

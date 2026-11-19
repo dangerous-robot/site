@@ -41,6 +41,18 @@ class TerminalFetchError(Exception):
         )
 
 
+def truncate_text(text: str) -> str:
+    """Cap page text at ``_MAX_TEXT_LENGTH`` characters with a visible marker.
+
+    Every text the ingestor model sees goes through here, whether fetched
+    here or handed over prefetched (Tavily's ``raw_content``): a long arXiv
+    page or report overflows the ingestor model's context otherwise.
+    """
+    if len(text) > _MAX_TEXT_LENGTH:
+        return text[:_MAX_TEXT_LENGTH] + "\n[truncated]"
+    return text
+
+
 def extract_page_data(html: str, url: str) -> dict[str, Any]:
     """Parse HTML and extract title, meta, and text content.
 
@@ -61,9 +73,7 @@ def extract_page_data(html: str, url: str) -> dict[str, Any]:
         or _extract_meta(soup, "datePublished")
     )
 
-    text = soup.get_text(separator="\n", strip=True)
-    if len(text) > _MAX_TEXT_LENGTH:
-        text = text[:_MAX_TEXT_LENGTH] + "\n[truncated]"
+    text = truncate_text(soup.get_text(separator="\n", strip=True))
 
     return {
         "title": title,

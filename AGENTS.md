@@ -19,6 +19,7 @@ For the generalized vision, see `docs/architecture/glossary.md` § How the syste
 ## Writing conventions
 
 - Rarely use em dash characters. Prefer commas, colons, or parentheses instead.
+- Before Brandon reads page copy, UI strings, docs or notes written here, run `/copy-review` (personal skill, `~/.claude/skills/copy-review/`; this repo's config is `.claude/copy-review.md`).
 - Refer to developers, operators, contributors, maintainers and users by role ("the user", "a contributor"), with they/them pronouns. Name a specific person only when something is uniquely about them, such as a photo credit.
 
 ## UI & Design Standards
@@ -175,7 +176,12 @@ uv run dr review --claim ecosia-ai/renewable-energy-hosting
 
 The five commands are `dr draft`, `dr recheck`, `dr review`, `dr findings` and `dr lint`. `dr draft --dry-run` makes no model or search call and writes nothing: it runs the checks that would refuse the real run and prints what that run would do. `dr draft --paid-dry-run` runs the paid loop and writes nothing. Their flags, what each writes, which can ask archive.org to capture a page, and the run rules are in `docs/architecture/pipeline-commands.md`; `dr <command> --help` has examples.
 
-Agents: do not run the `dr review` walkthrough or a sign-off, do not wrap them in a pty (`script`, `expect`, Python `pty`) and do not edit a sidecar's `human_review` by hand. Every sign-off needs a person at a terminal (stdin must be a tty and the claim slug is typed back before anything is written), so a piped command cannot sign off; a sign-off is Brandon's. `dr review --format text|json` is read-only and safe for an agent.
+A draft walkthrough is done one of two ways, and a sign-off is Brandon's in both:
+
+- **Manual.** Brandon runs `uv run dr review` at his terminal.
+- **Interview.** In a session with Brandon present, an agent takes the drafts one at a time. For each it shows the claim, the verdict and confidence, the cited sources and its own recommendation, then asks for his decision and waits. It then prints the exact command that carries out that decision (`dr review --claim REF --approve`, `--archive`, a `dr draft --criterion` step), and Brandon runs it at his terminal.
+
+Agents never sign off unattended: do not run the `dr review` walkthrough or a sign-off command, do not wrap them in a pty (`script`, `expect`, Python `pty`), do not edit a sidecar's `human_review` by hand, and do not hand over a filled-in answer sheet for Brandon to press through. Every sign-off needs a person at a terminal (stdin must be a tty and the claim slug is typed back before anything is written), so a piped command cannot sign off. `dr review --format text|json` is read-only and safe for an agent; an interview uses it to show each draft.
 
 With the venv activated (`source .venv/bin/activate`), the `uv run` prefix is optional.
 
@@ -191,7 +197,7 @@ inv build            # build Astro site
 inv lint             # lint research Markdown and check citations
 inv audit            # run dr lint and print a summary
 inv audit.prune      # list orphaned source files by year; --apply deletes them
-inv check            # type-check, build, lint, test (pre-push gate)
+inv check            # type-check, build, lint, test (runs in the pre-commit hook; required before a push)
 inv clean            # remove build artifacts
 inv worker-deploy    # type-check, test, migrate and deploy the dr-api Worker
 ```
@@ -307,6 +313,15 @@ Three mutually exclusive work states:
 
 **Only Scheduled work may be coded.** Unscheduled and Plan-only items can be planned freely (docs are never gated), but before any code edit the item must be in a release roadmap and registered as the active work item (the `release-triage` skill does both; see [Agent workflow tooling](#agent-workflow-tooling)). The one exception is a hotfix: an urgent `patch` registered without triage, which expires after 4 hours and must be added to the active roadmap or `UNSCHEDULED.md` before it is finished.
 
+**Two kinds of push, and agents push back.** Normal site pages can ship as a site push (`1.0.0-beta.N.1`); anything that touches research, the pipeline or a claim ships as a beta release (next `1.0.0-beta.N`) with the full checks. Kinds, checks and steps: `docs/runbook.md` § Releasing. An agent says so, in one line and before doing the work, when a request would:
+
+- add work that is not on the roadmap ("this is unscheduled; it adds to beta.N, now n open entries, or goes to the backlog");
+- take the beta in progress past five open entries (needs the operator's explicit OK, or the entry it replaces);
+- release a beta while an entry on its line is open, push research, pipeline or claim changes under a site-push number, or push anything without the operator's yes to the commit list;
+- skip a release check.
+
+This holds even when the request comes from the operator.
+
 A plan in `docs/plans/deferred/` counts as Unscheduled: its entry in the "Deferred plans" section of `docs/UNSCHEDULED.md` is the record. A release roadmap section whose plan is deferred keeps its letter and takes the status `deferred` with a one-line pointer, so section references in other docs stay valid.
 
 **Release roadmaps live at the top level of `docs/`**, not under `docs/plans/`. Sub-plans (one per discrete work item or feature) live under `docs/plans/`. The first public release will be `v1.0.0`, tracked in `docs/v1.0.0-roadmap.md`. Future release roadmaps follow the same pattern: `docs/v{semver}-roadmap.md` (or `docs/v{semver}.md` if the simpler name is preferred for that release).
@@ -320,7 +335,8 @@ A plan in `docs/plans/deferred/` counts as Unscheduled: its entry in the "Deferr
 **Transition rules:**
 - When a plan-only item gets prioritized but not release-assigned: add to UNSCHEDULED.md
 - When assigned to a release: add to the release roadmap, remove from UNSCHEDULED.md
-- When a release ships: `git mv docs/v{semver}-roadmap.md docs/plans/completed/`, and in the same change point `VERSION.md` "Active release:" at the next roadmap; then run backlog triage (`release-triage` skill). The context hook and `release-triage` read that line to find the in-flight release. Once the roadmap moves, the gate rejects any work item still pointing at the shipped release.
+- When a beta ships (a beta release, `docs/runbook.md` § Releasing): add its Releases row, move its done items to `## Shipped`, start the next `**Next beta (beta.N):**` line in `## Plan`, then run backlog triage (`release-triage` skill). The roadmap stays where it is.
+- When the release line ships (1.0.0, not each beta): `git mv docs/v{semver}-roadmap.md docs/plans/completed/`, and in the same change point `VERSION.md` "Active release:" at the next roadmap; then run backlog triage (`release-triage` skill). The context hook and `release-triage` read that line to find the in-flight release. Once the roadmap moves, the gate rejects any work item still pointing at the shipped release.
 
 **Plan filename suffix convention** — append to base name when it adds signal:
 
@@ -335,7 +351,7 @@ No suffix = plan is complete and reviewable. Keep the set small.
 
 **Release roadmap naming:** `docs/v{semver}-roadmap.md` (or `docs/v{semver}.md`). `VERSION.md` declares the current working version and the active release roadmap path.
 
-**Release roadmap layout:** a header, then `## Releases` (one row per beta or release: shipped, tagged, or in progress on `main`), `## Plan` (remaining items by target release), and the work items grouped under `## Shipped`, `## Scheduled` and `## Deferred`. An item moves between groups as its status changes.
+**Release roadmap layout:** a header, then `## Releases` (one row per beta or release: shipped, tagged, or in progress on `main`), `## Plan` (remaining items by target release: a `**Next beta (beta.N):**` line for the beta in progress and a `**Site (ships any time):**` line for normal-page work that can go out as a site push), and the work items grouped under `## Shipped`, `## Scheduled` and `## Deferred`. An item moves between groups as its status changes.
 
 **Work item IDs:** each release roadmap (major or minor) gives its work items IDs of the form `PREFIX-LETTER`, as in `SITE-J`. The prefix hints at the topic: `SITE` (reader-facing pages and content), `RE` (research archive and pipeline), `SEC` (security), `OPS` (repo, agent and deploy tooling); add a new prefix only when none fits. Letters run A, B, C … Z, then AA, AB … across the whole roadmap, so the letter alone is unique; a new item takes the next unused letter. IDs are never changed or reused, even if the topic shifts. Always cite an item with its name, as in "SITE-J (Responsible AI chatbots)", never a bare ID.
 

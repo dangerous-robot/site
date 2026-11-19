@@ -41,7 +41,7 @@ templates:
     topics: [data-privacy]
     core: true
     notes: "Covers default behavior; opt-out options noted in narrative"
-    grading_rule: "Covers default behavior; opt-out options noted in narrative"  # TODO Brandon: rewrite as a grading rule
+    grading_rule: "Grade the default for a consumer account: true when conversations are not used for training unless the user opts in; false when they are used unless the user opts out; mixed when the consumer default differs by region. Describe the opt-out or opt-in control in the narrative; it does not change the verdict."
 
   - slug: discloses-models-used
     text: "PRODUCT discloses which models it uses"
@@ -101,7 +101,7 @@ templates:
     core: true
 
   - slug: ai-producers-existential-score
-    text: "Most major ENTITY score D or worse on FLI's 2025 AI Safety Index for Existential Threat"
+    text: "None of the major ENTITY score above D+ on existential safety in the latest FLI AI Safety Index"
     entity_type: subject
     subjects: [subjects/ai-model-producers]
     topics: [ai-safety, industry-analysis]
@@ -119,6 +119,61 @@ templates:
     tags: [highlight]
     core: true
 
+  - slug: ai-producers-signed-extinction-risk-statement
+    text: In 2023 the heads of OpenAI, Anthropic and Google DeepMind signed a statement calling extinction risk from AI a global priority.
+    entity_type: subject
+    subjects: [subjects/ai-model-producers]
+    topics: [ai-safety]
+    core: false
+
+  - slug: openai-sycophancy-rollback-2025
+    text: In April 2025 OpenAI rolled back a ChatGPT update that agreed with harmful ideas to please users, a flaw its tests missed.
+    entity_type: subject
+    subjects: [subjects/ai-model-producers]
+    topics: [ai-safety, product-comparison]
+    core: false
+
+  - slug: courts-ai-invented-citations
+    text: By mid-2026, courts worldwide had caught AI-invented citations in more than a thousand filings.
+    entity_type: subject
+    subjects: [subjects/generative-ai]
+    topics: [industry-analysis, ai-safety]
+    core: false
+
+  - slug: teens-ai-companion-use
+    text: In a 2025 US survey, most teens had used an AI companion and a third had picked one over a person for a serious talk.
+    entity_type: subject
+    subjects: [subjects/generative-ai]
+    topics: [industry-analysis, ai-literacy]
+    core: false
+
+  - slug: ai-inference-vs-training-electricity
+    text: Serving ENTITY answers (inference) now uses more electricity than training the models
+    entity_type: subject
+    subjects: [subjects/generative-ai]
+    topics: [environmental-impact, ai-safety, industry-analysis]
+    core: false
+
+  - slug: data-centers-gas-vs-renewables
+    text: Measured by grid power actually drawn, ENTITY in 2024 got more electricity from gas than from all renewables combined.
+    entity_type: subject
+    subjects: [subjects/us-data-centers]
+    topics: [environmental-impact, industry-analysis]
+    core: false
+
+  - slug: data-centers-electricity-share
+    text: ENTITY used more than 4% of the country's electricity in 2024.
+    entity_type: subject
+    subjects: [subjects/us-data-centers]
+    topics: [environmental-impact]
+    core: false
+
+  - slug: gemini-prompt-electricity
+    text: Gemini uses about 0.24 watt-hours of electricity per typical text prompt.
+    entity_type: subject
+    subjects: [subjects/generative-ai]
+    topics: [environmental-impact]
+    core: false
 
 # Deferred and retired criteria (the company block is retired: companies are not a claim target).
 # To reactivate, move entries back into `templates` above.

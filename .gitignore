@@ -28,6 +28,7 @@ docs/plans/drafts/
 .claude/*
 !.claude/settings.json
 !.claude/skills/
+!.claude/copy-review.md
 
 # graphify knowledge-graph output (regenerated; not tracked)
 graphify-out/

@@ -34,4 +34,9 @@ hosts:
     reason: "PR wire: republishes entity press releases without independent analysis"
   - host: einpresswire.com
     reason: "PR wire: republishes entity press releases without independent analysis"
+  # The site's own pages: a claim page quoting itself is not evidence, and a
+  # recheck must not read the verdict it is testing. treadlightly.ai stays
+  # allowed: it is the first-party source for claims about TreadLightly AI.
+  - host: dangerousrobot.org
+    reason: "the site's own pages are not independent sources"
   # Candidates to review later: medium.com (intermittent), reuters.com (geo-gated)

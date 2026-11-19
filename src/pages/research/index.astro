@@ -2,6 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import { operator, profileHref } from '../../lib/reviewers';
 import { jsonForScript } from '../../lib/jsonForScript';
+import PipelineDiagram from '../../components/PipelineDiagram.astro';
 
 const op = operator();
 
@@ -27,7 +28,7 @@ const faqSchema = {
       "name": "What topics are covered?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Claims made by or about AI companies and AI products regarding environmental impact, energy use, carbon footprint, sustainability practices, safety claims, transparency disclosures, and responsible AI practices. Any AI company or product where a verifiable claim can be evaluated against publicly accessible sources.",
+        "text": "Claims made by AI companies or about AI products and subjects regarding environmental impact, energy use, carbon footprint, sustainability practices, safety claims, transparency disclosures, and responsible AI practices. Any AI product or subject where a verifiable claim can be evaluated against publicly accessible sources.",
       },
     },
     {
@@ -43,7 +44,7 @@ const faqSchema = {
       "name": "What methodology is used for research?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Claims move through a pipeline: (1) Research, an AI agent searches for sources. (2) Analysis, an analyst agent evaluates evidence and drafts a verdict; an evaluator agent checks for consistency. (3) Human review, an operator approves, rejects, or requests revision. Nothing publishes without human sign-off. (4) Schema validation, all data is validated by Zod schemas at build time.",
+        "text": "Claims move through a pipeline: (1) Research, an AI agent searches for sources. (2) Analysis, an analyst agent evaluates evidence and drafts a verdict; an evaluator agent grades the claim against the same sources independently. (3) Human review, we approve it or leave it as a draft. Nothing publishes without human sign-off. (4) Schema validation, all data is validated by Zod schemas at build time.",
       },
     },
     {
@@ -51,7 +52,7 @@ const faqSchema = {
       "name": "How does work enter this site?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Six channels put new research in the queue: a new criterion (an operator drafts its claim for one entity at a time), a new product or subject (an operator drafts claims about it one at a time), a new source (matches to existing criteria or claims), a topic or URL drop (free-form work for triage), a public source submission via GitHub issue, and a public claim request (planned, not yet live). None of these channels publish anything directly; every claim goes through the methodology pipeline before appearing on the site.",
+        "text": "Six channels put new research in the queue: a new criterion (we draft its claim for one entity at a time), a new product or subject (we draft claims about it one at a time), a new source, a topic or URL drop (free-form work for triage), a public source submission, and a public claim request. Both public paths accept a GitHub issue or an email to contact@dangerousrobot.org. None of these channels publish anything directly; every claim goes through the methodology pipeline before appearing on the site.",
       },
     },
     {
@@ -77,7 +78,7 @@ const faqSchema = {
   <article class="research-explainer">
     <header class="hero">
       <p class="eyebrow">The research tool</p>
-      <h1>Open, accountable research on AI and the industries building it: built by people, powered by AI.</h1>
+      <h1>Research on AI and the industries building it: built by people with the help of AI.</h1>
     </header>
 
     <nav class="research-index" aria-label="Research sections">
@@ -106,7 +107,7 @@ const faqSchema = {
     <section class="research-overview">
       <h2>How this site works</h2>
       <p>
-        Dangerous Robot tracks claims about AI companies and products: what they
+        Dangerous Robot tracks claims about AI products and subjects: what they
         say about energy use, environmental impact, safety practices, and
         transparency, checked against public sources by an AI-assisted pipeline
         with human review on every published verdict. What the site is, who
@@ -129,7 +130,7 @@ const faqSchema = {
       <div class="explainer-card">
         <h2>How to read a claim page</h2>
         <p>
-          A claim opens with the verdict, confidence, and a one-line takeaway.
+          A claim opens with the verdict and confidence.
           Below sit the rationale, the sources cited, the criterion the claim
           maps to, and a research-process disclosure showing which agents ran,
           what models were used, and when a human reviewed it.
@@ -143,18 +144,16 @@ const faqSchema = {
       <details>
         <summary>What topics are covered?</summary>
         <div class="answer">
-          <p>Research on this site focuses on:</p>
           <ul>
             <li>
-              Claims made by or about AI companies and AI products regarding
+              Claims made by AI companies or about AI products and subjects regarding
               environmental impact, energy use, carbon footprint, sustainability
               practices, safety claims, transparency disclosures, and responsible
               AI practices.
             </li>
             <li>
-              Any AI company or product where a verifiable claim can be evaluated,
-              including new and smaller players. No minimum size or prominence
-              required.
+              Any AI product or subject where a verifiable claim can be evaluated,
+              including new and smaller players.
             </li>
             <li>Claims that can be evaluated against sources that are publicly accessible.</li>
           </ul>
@@ -167,7 +166,7 @@ const faqSchema = {
           <ul>
             <li>Financial or investment advice about AI companies.</li>
             <li>Legal or regulatory interpretation.</li>
-            <li>Non-AI technology companies. Coverage is limited to the AI sector.</li>
+            <li>Non-AI technology companies.</li>
             <li>Claims about individuals rather than organizations.</li>
             <li>
               Claims that rely solely on non-public or paywalled sources with no
@@ -200,12 +199,11 @@ const faqSchema = {
             </li>
             <li>
               <strong>Analysis.</strong> An analyst agent evaluates the evidence and drafts a
-              verdict with supporting reasoning. An evaluator agent checks the draft for consistency
-              with the sources.
+              verdict with supporting reasoning. An evaluator agent grades the claim against the same sources,
+              independent of the analyst's verdict.
             </li>
             <li>
-              <strong>Human review.</strong> An operator reviews the draft via the
-              <code>dr</code> CLI and either approves it, rejects it, or requests a revision.
+              <strong>Human review.</strong> The person named on the claim reviews the draft and either approves it or leaves it as a draft for rework.
               Nothing is published without human sign-off.
             </li>
             <li>
@@ -214,6 +212,7 @@ const faqSchema = {
               built into the site.
             </li>
           </ol>
+          <PipelineDiagram />
 
           <h3>Verdicts</h3>
           <ul>
@@ -229,13 +228,12 @@ const faqSchema = {
           <h3>Confidence levels</h3>
           <ul>
             <li>
-              <strong>High</strong>, multiple independent primary sources confirm the verdict.
-              Evidence is consistent with little meaningful uncertainty.
+              <strong>High</strong>, multiple independent sources with direct evidence confirm the verdict.
+              Evidence is consistent with little uncertainty.
             </li>
             <li>
-              <strong>Medium</strong>, evidence is present but incomplete. Sources may be
-              partially secondary, limited in scope, or not fully consistent. Reasonable but
-              not definitive.
+              <strong>Medium</strong>, evidence is present but incomplete. Evidence may rest on a
+              single source, be self-reported, or leave room for more than one reading.
             </li>
             <li>
               <strong>Low</strong>, sources are limited, conflicting, or carry significant
@@ -246,26 +244,16 @@ const faqSchema = {
           <h3>Rechecks and "as of" dates</h3>
           <p>
             Each claim has a recheck cadence, typically 60 days (pricing: 14 to 30 days; policy:
-            90 to 180 days). When due, the pipeline re-researches and the operator reviews again
+            90 to 180 days). When due, the pipeline re-researches and a person reviews again
             before any change publishes. The "as of" date shows when evidence was last reviewed.
           </p>
 
           <h3>Limits</h3>
           <ul>
-            <li>
-              <strong>Point-in-time.</strong> Verdicts do not update automatically. Check the
-              "as of" date.
-            </li>
-            <li>
-              <strong>AI-assisted, human-reviewed.</strong> Agents do the initial work.
-              One person approves, and can be wrong.
-            </li>
-            <li>
-              <strong>Coverage is not comprehensive.</strong> Gaps exist and are expected.
-            </li>
-            <li>
-              <strong>No paid research.</strong> No commissions, no sponsored verdicts.
-            </li>
+            <li>Verdicts do not update automatically.</li>
+            <li>Agents do the initial work. One person approves.</li>
+            <li>Coverage is not comprehensive.</li>
+            <li>No paid research: no commissions, no sponsored verdicts.</li>
           </ul>
         </div>
       </details>
@@ -273,28 +261,28 @@ const faqSchema = {
       <details>
         <summary>How does work enter this site?</summary>
         <div class="answer">
-          <p>Six channels can put new research in the queue. The first four are operator-driven; the last two are public submission paths.</p>
+          <p>Six channels can put new research in the queue. We start the first four; anyone can use the last two.</p>
           <ol>
             <li>
-              <strong>A new criterion.</strong> A reusable claim template is added to the template library. An operator drafts the criterion's claim for one entity at a time.
+              <strong>A new criterion.</strong> A reusable claim template is added to the template library. We draft the criterion's claim for one entity at a time.
             </li>
             <li>
-              <strong>A new product or subject.</strong> An operator writes a product's file by hand; a subject's record is written with its first claim. Claims about it are drafted one at a time.
+              <strong>A new product or subject.</strong> We write a product's file by hand; a subject's record is written with its first claim. Claims about it are drafted one at a time.
             </li>
             <li>
-              <strong>A new source.</strong> An operator adds a citable reference. The system matches it to existing criteria (queuing new claim work) or to existing claims (queuing a reassessment).
+              <strong>A new source.</strong> We add a citable reference.
             </li>
             <li>
-              <strong>A topic or URL drop.</strong> An operator adds free-form work to the queue file for triage and routing.
+              <strong>A topic or URL drop.</strong> We pick a topic or a URL to work on.
             </li>
             <li>
-              <strong>A public source submission.</strong> Anyone can propose a source via a <a href="https://github.com/dangerous-robot/site/issues/new?template=submit-source.md">GitHub issue</a>. An operator reviews and ingests if accepted.
+              <strong>A public source submission.</strong> Anyone can propose a source via a <a href="https://github.com/dangerous-robot/site/issues/new?template=submit-source.md">GitHub issue</a>. We review it and, if accepted, add it to the sources. Without a GitHub account, email <a href="mailto:contact@dangerousrobot.org">contact@dangerousrobot.org</a> with the subject "Source submission: [page or claim]".
             </li>
             <li>
-              <strong>A public claim request.</strong> Planned, not yet live. Anyone will be able to propose a claim worth investigating; an operator triages.
+              <strong>A public claim request.</strong> Anyone can propose a claim worth investigating via a <a href="https://github.com/dangerous-robot/site/issues/new?template=request-claim.md">GitHub issue</a>; we triage it. Without a GitHub account, email <a href="mailto:contact@dangerousrobot.org">contact@dangerousrobot.org</a> with the subject "Claim request: [the claim in one sentence]".
             </li>
           </ol>
-          <p>None of these channels publish anything directly. Every claim goes through the methodology pipeline above before it appears on the site.</p>
+          <p>Every claim goes through the methodology pipeline above before it appears on the site.</p>
         </div>
       </details>
 
@@ -316,7 +304,7 @@ const faqSchema = {
             </li>
           </ul>
           <p>
-            Every source is linked and accessible from the claim page that cites it. Sources
+            Every source is linked from the claim page that cites it. Sources
             marked with an archived copy include a cached version in case the original is removed.
           </p>
         </div>

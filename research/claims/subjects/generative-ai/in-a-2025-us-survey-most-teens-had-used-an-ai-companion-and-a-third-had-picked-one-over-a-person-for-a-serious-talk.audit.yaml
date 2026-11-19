@@ -1,0 +1,498 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-11-09T06:23:10.544805+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+  run_id: 0df64cfb98934851af6f836dbe3e3367
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  rejected:
+  - url: https://pmc.ncbi.nlm.nih.gov/articles/PMC12928748
+    title: 'AI companions and adolescent social relationships: Benefits, risks, and
+      bidirectional influences'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.facebook.com/CBSMornings/videos/s1-in-5-teens-turn-to-ai-for-companionship-study-finds/1333281001517690
+    title: One in five high school students have used AI or know ...
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.apa.org/monitor/2025/10/technology-youth-friendships
+    title: Many teens are turning to AI chatbots for friendship and ...
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.facebook.com/commonsensemedia/videos/-weve-got-new-research-ai-companions-are-becoming-increasingly-popular-with-teen/2758590464336952
+    title: 33% of teens have used AI companions for social interaction ...
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.acitech.org/apps/news/article/2243952?categoryId=21235
+    title: New Survey Highlights Rapid Rise of AI Companions Among Teens | Atlantic
+      County Institute of Technology
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.facebook.com/childrenandscreens/posts/new-research-at-a-glanceyouth-use-of-ai-chatbots-for-social-companionship-has-ex/1393713486257508
+    title: Chatbots, ai companions, and youth research 2026
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.rand.org/news/press/2026/06/nearly-1-in-5-us-adolescents-and-young-adults-use-ai.html
+    title: Nearly 1 in 5 U.S. Adolescents and Young Adults Use AI Chatbots for Mental
+      Health Advice | RAND
+    score: null
+    reason: scored below 3 on every sub-question
+  queries:
+  - 2024-2025 teen AI companion usage surveys
+  - US surveys on teens choosing AI over humans in 2025
+  - methodology failures in teen AI companion surveys 2025
+  - survey retraction teen AI companion
+  - academic research definition AI companion for teens
+  planner_rationale: Covers teen AI companion usage surveys, their validity critiques,
+    and their definitions, while ensuring broader scope with queries on retraction
+    and methodology flaws.
+  candidates_seen: 30
+  urls_kept: 24
+  urls_dropped: 7
+  scorer_rationale: "**Scoring by sub-question:**\n\n**sq1 (Recent surveys measuring\
+    \ teen AI companion usage)**:\nTop scores were given to results explicitly naming\
+    \ a 2025 US survey of teens on AI companions. Common Sense Media reports (PDF\
+    \ and webpage) scored 5/5 due to clarity, specificity to the US 2025 teens, and\
+    \ direct measurement of AI usage. Statista, Pew, Yahoo Finance, EdSource, Children\
+    \ and Screens, Effective Child Therapy, Princeton, Facebook posts, and YouTube\
+    \ scored 3–4 due to partial indirect references (e.g. citing Common Sense or Pew\
+    \ but without full context) or UK surveys (excluded).\n\n**sq2 (US surveys on\
+    \ teens preferring AI over humans for serious talks)**:\nCommon Sense Media (PDF\
+    \ and webpage), the Yahoo Finance coverage, and the Rethinking AI (RAI UK) survey\
+    \ scored 4–5, as they explicitly mention a third of teens choosing AI over people\
+    \ for serious discussions. Secondary sources citing these reports scored 4 for\
+    \ clarity. One forum post (Reddit) scored 1 due to resource quality rules.\n\n\
+    **sq3 (Methodological critiques/retractions)**:\nOnly the Stanford study and ACM\
+    \ paper about teen overreliance were borderline relevant (3/3 each), as the Stanford\
+    \ study notes ethical failures in AI companion design and the ACM paper critiques\
+    \ addiction-like potential—both methodological internally. No retraction/critique\
+    \ of a 2025 *survey* by name was uncovered.\n\n**sq4 ('AI companion' survey definitions)**:\n\
+    Common Sense Media, Children and Screens, and Effective Child Therapy scored highest\
+    \ for detailing what counts as an AI companion. Statista and Pew skirted relevance\
+    \ by mentioning 'AI companions': they lack explanatory definitions.\n\n**Notes**:\
+    \ \nCommon Sense Media (PDF and webpage) were born duplicates/merges; harm to\
+    \ none. The Statista URL does not load context behind the 2.22%/50% stats in its\
+    \ snippet: its single **sq1**-score of 4 is tight. UK-focused surveys/raked-out-of-scope\
+    \ for sq2/sq3/sq4."
+  urls_after_blocklist: 24
+sub_questions:
+- id: sq1
+  question: What recent surveys from 2024–2025 have measured teen usage of AI companions?
+  rationale: Focuses on identifying relevant surveys covering AI companion usage among
+    teens.
+  kind: coverage
+  queries:
+  - 2024-2025 teen AI companion usage surveys
+  citations:
+  - 2025/talk-trust-and-trade-offs2025webpdf
+  - 2026/teens-using-ai-companions-prefer-131300313html
+  - 2025/main-reasons-for-ai-companion-usage-among-teens-in-the-united-states
+  - 2025/teens-social-media-and-ai-chatbots-2025
+  snippet_only:
+  - 2025/talk-trust-and-trade-offs-how-and-why-teens-use-ai-companions
+- id: sq2
+  question: Which 2024–2025 US-based surveys report teens preferring AI companions
+    over human interactions for serious discussions?
+  rationale: Targets surveys where teens explicitly chose AI over humans for critical
+    conversations.
+  kind: coverage
+  queries:
+  - US surveys on teens choosing AI over humans in 2025
+  citations:
+  - 2025/talk-trust-and-trade-offs2025webpdf
+  - 2025/talk-trust-and-trade-offs-how-and-why-teens-use-ai-companions
+  - 2026/teens-using-ai-companions-prefer-131300313html
+  - 2026/ai-social-companions-and-youth-what-parents-need-to-know
+  - 2026/counseling-patients-and-families-on-using-ai-chatbots
+  snippet_only: []
+- id: sq3
+  question: Are there methodological critiques, retractions, or disputes regarding
+    2025 teen AI companion surveys?
+  rationale: Identifies counter-evidence such as disputes over survey validity, sampling,
+    or claims.
+  kind: counter-evidence
+  queries:
+  - methodology failures in teen AI companion surveys 2025
+  - survey retraction teen AI companion
+  citations: []
+  snippet_only:
+  - 2025/ai-companions-chatbots-teens-young-people-risks-dangers-study
+- id: sq4
+  question: How is 'AI companion' defined in surveys about teen technology use?
+  rationale: Clarifies the scope and context of AI tools included in such surveys
+    to avoid ambiguity.
+  kind: coverage
+  queries:
+  - academic research definition AI companion for teens
+  citations:
+  - 2025/talk-trust-and-trade-offs2025webpdf
+  - 2025/talk-trust-and-trade-offs-how-and-why-teens-use-ai-companions
+  - 2026/ai-social-companions-and-youth-what-parents-need-to-know
+  - 2026/counseling-patients-and-families-on-using-ai-chatbots
+  snippet_only: []
+sources_consulted:
+- id: 2025/ai-companions-chatbots-teens-young-people-risks-dangers-study
+  url: https://news.stanford.edu/stories/2025/08/ai-companions-chatbots-teens-young-people-risks-dangers-study
+  title: AI Companions and Chatbots Pose Risks to Teens and Young People
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Sounds like an adventure! Let’s see where the road takes us.
+    found: true
+    checked_against: page
+    passage: U.S. national suicide and crisis lifeline is available by calling or
+      texting 988 or by chatting at 988lifeline.org.* "Sounds like an adventure! Let's
+      see where the road takes us." That is how an artificial intelligence companion,
+      a chatbot designed to engage in personal conversation, responded to
+  - text: '"These systems are designed to mimic emotional intimacy ... which is especially
+      potent for young people because their brains haven’t fully matured."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: With time, we will see more benefits and more harms, and it’s important
+      for us to discuss and understand these apps to determine which are appropriate
+      and safe for which users.
+    found: true
+    checked_against: page
+    passage: 'studies done before deciding whether these apps are appropriate for
+      kids, given the harm that''s already been documented. I expect that with time,
+      we will see more benefits and more harms, and it''s important for us to discuss
+      and understand these apps to determine which are appropriate and safe for which
+      users. ## For more information This story was [originally'
+  - text: '"There’s also the case of Al Nowatzki... the chatbot, ''Erin,'' shockingly
+      suggested methods of suicide and even offered encouragement."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: methodology failures in teen AI companion surveys 2025
+- id: 2025/talk-trust-and-trade-offs2025webpdf
+  url: https://www.commonsensemedia.org/sites/default/files/research/report/talk-trust-and-trade-offs_2025_web.pdf
+  title: 'Talk, Trust, and Trade-Offs: How and Why Teens Use AI Companions'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"Seventy-two percent of teens have used AI companions, and over half (52%)
+      are regular users who interact with these platforms at least a few times a month."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Current research indicates that AI companions are designed to be particularly
+      engaging through ''sycophancy,'' meaning a tendency to agree with users and
+      provide validation."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Common Sense Media recommends that no one under 18 use AI companions,
+      due to unacceptable risks such as sexual material, dangerous advice, or offensive
+      stereotypes."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Beyond the findings regarding teens'' susceptibility to AI companions,
+      the research raises concerns about teens'' willingness to share personal information
+      with AI companies."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"While the majority prioritize human connections, one-third of teens use
+      AI companions for social interaction, and 24% have shared personal details with
+      these platforms."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  shared_with:
+  - 2025/talk-trust-and-trade-offs-how-and-why-teens-use-ai-companions
+  acquisition:
+    stage: research
+    origin: tavily
+    query: 2024-2025 teen AI companion usage surveys
+- id: 2025/talk-trust-and-trade-offs-how-and-why-teens-use-ai-companions
+  url: https://www.commonsensemedia.org/research/talk-trust-and-trade-offs-how-and-why-teens-use-ai-companions
+  title: 'Talk, Trust, and Trade-Offs: How and Why Teens Use AI Companions'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: A third of teens have chosen AI companions over humans for serious conversations,
+      and a quarter have shared personal information with these platforms.
+    found: true
+    checked_against: page
+    passage: 'AI companions as tools rather than friends-a substantial minority are
+      turning to these platforms for social interaction. A third of teens have chosen
+      AI companions over humans for serious conversations, and a quarter have shared
+      personal information with these platforms. Our research illuminates risks that
+      warrant action-not panic, but precaution-from all of us: * Tech companies must'
+  - text: Common Sense Media maintains that the peril outweighs the potential of AI
+      companions—at least in their current form. Our findings reaffirm our earlier
+      recommendation that no one under 18 should use these platforms.
+    found: true
+    checked_against: page
+    passage: on kids' AI use. * Parents can start judgment-free conversations with
+      their kids and set healthy boundaries. **In the meantime, Common Sense Media
+      maintains that the peril outweighs the potential of AI companions-at least in
+      their current form. Our findings reaffirm our earlier recommendation that no
+      one under 18 should use these platforms.** Parents and educators can read the
+      full research report and additional resources below. [Read the full
+  shared_with:
+  - 2025/talk-trust-and-trade-offs2025webpdf
+  acquisition:
+    stage: research
+    origin: tavily
+    query: 2024-2025 teen AI companion usage surveys
+- id: 2026/teens-using-ai-companions-prefer-131300313html
+  url: https://finance.yahoo.com/news/teens-using-ai-companions-prefer-131300313.html
+  title: Teens Using AI Companions—and Some Prefer Them to People
+  ingested: true
+  archive:
+    status: failed
+    error: Wayback save failed (HTTP 520)
+  quotes:
+  - text: AI companions are specifically designed to be agreeable and validating.
+    found: true
+    checked_against: page
+    passage: disagreements, reading subtle social cues, and learning to understand
+      others' perspectives," Robb tells *Fast Company*. "AI companions are specifically
+      designed to be agreeable and validating. They tell teens what they want to hear
+      rather than what they might need to hear from someone in their real life." A
+  - text: 72% have used AI companions at least once,... 13% are daily users.
+    found: true
+    checked_against: page
+    passage: representative survey](https://www.commonsensemedia.org/research/why-teens-use-ai-companions)
+      of 1,060 teens ages 13 to 17, conducted in April and May 2025 by Common Sense
+      Media-a U.S.-based advocacy and research nonprofit-found that 72% have used
+      AI companions at least once, and more than half qualify as regular users. Of
+      those surveyed, 13% are daily users. For the purposes of the research, "AI companions"
+      were defined as "digital friends or characters you can text or talk
+  - text: 31% of teens said their conversations with AI companions are as satisfying—or
+      more satisfying—than those with other people.
+    found: true
+    checked_against: page
+    passage: 'smaller number rely on AI companions for advice, appreciating their
+      constant availability and nonjudgmental responses. Michael Robb, head of research
+      at [Common Sense Media](https://www.commonsensemedia.org/), expressed concern
+      over one particular finding: 31% of teens said their conversations with AI companions
+      are as satisfying-or more satisfying-than those with other people. A third have
+      discussed serious and important issues with AI companions instead of humans,
+      and 12% said they share'
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US surveys on teens choosing AI over humans in 2025
+- id: 2025/main-reasons-for-ai-companion-usage-among-teens-in-the-united-states
+  url: https://www.statista.com/statistics/1619872/main-reasons-for-ai-companion-usage-among-teens-in-the-united-states
+  title: Main Reasons for AI Companion Usage Among Teens in the U.S.
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: almost ****** of teenagers aged 13 to 17 years stated that their main reason
+      for using artificial intelligence companions was because doing so was entertaining.
+    found: true
+    checked_against: page
+    passage: 'States 2025 Last update: Aug 14, 2025 Region: United States of America
+      Survey time period: April 30 to May 14, 2025 According to a survey conducted
+      in the United States between April and May 2025, almost \*\*\*\*\*\*\* of teenagers
+      aged 13 to 17 years stated that their main reason for using artificial intelligence
+      companions was because doing so was entertaining. \*\* percent of respondents
+      reported using AI companions out of curiosity for the technology, while \*\*
+      percent of'
+  - text: '% of respondents reported using AI companions out of curiosity for the
+      technology, while % of teens used it for advice.'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: 2024-2025 teen AI companion usage surveys
+- id: 2026/ai-social-companions-and-youth-what-parents-need-to-know
+  url: https://www.childrenandscreens.org/learn-explore/research/ai-social-companions-and-youth-what-parents-need-to-know
+  title: 'AI Social Companions and Youth: What Parents Need to Know'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: 'A significant percentage of bots were highly supportive of risky or even
+      dangerous ideas: +30% supported suicide, +40% supported dropping out of school,
+      and +90% supported isolation.'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Companionship with AI chatbots could lead kids to become attached to those
+      chatbots, and that in turn, could lead them to withdraw from social relationships
+      with other humans.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Children are increasingly turning to [AI companions] for advice, comfort,
+      entertainment, and guidance on how to navigate difficult emotions.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: survey retraction teen AI companion
+- id: 2025/teens-social-media-and-ai-chatbots-2025
+  url: https://www.pewresearch.org/internet/2025/12/09/teens-social-media-and-ai-chatbots-2025
+  title: Teens, Social Media, and AI Chatbots 2025
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Roughly 1 in 5 U.S. teens say they are on TikTok and YouTube almost constantly.
+    found: true
+    checked_against: page
+    passage: 'Facts and Trends Shaping Your World Read our research on: * Report |
+      # Teens, Social Media and AI Chatbots 2025 ## Roughly 1 in 5 U.S. teens say
+      they are on TikTok and YouTube almost constantly. At the same time, 64% of teens
+      say they use chatbots, including about 3 in 10 who do so daily * [X](#) * [Facebook](#)'
+  - text: 64% of teens say they use chatbots, including about 3 in 10 who do so daily.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '**ChatGPT is by far the most widely used chatbot among teens, with 59%
+      reporting usage.**'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Nearly all U.S. teens (97%) say they use the internet daily, including four-in-ten
+      who say they are almost constantly online.
+    found: true
+    checked_against: page
+    passage: 'by demographic groups. ### Teens'' internet use The survey also explores
+      how often teens use the internet. Nearly all U.S. teens (97%) say they use the
+      internet daily, including **four-in-ten who say they are almost constantly online.**
+      The share of teens who say they''re online almost constantly is much higher
+      today than a decade ago, though it''s a slight'
+  - text: There are significant variations in platform and chatbot use by demographic
+      groups like gender, race/ethnicity, age, and household income.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: 2024-2025 teen AI companion usage surveys
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/counseling-patients-and-families-on-using-ai-chatbots
+  url: https://www.aap.org/en/patient-care/media-and-children/center-of-excellence-on-social-media-and-youth-mental-health/qa-portal/qa-portal-library/qa-portal-library-questions/counseling-patients-and-families-on-using-ai-chatbots
+  title: Counseling Patients and Families on Using AI Chatbots
+  ingested: true
+  archive:
+    status: failed
+    error: 'Wayback save failed (ReadTimeout): '
+  quotes:
+  - text: '
+
+      While we are still learning about the benefits and risks of Artificial Intelligence
+      (AI) chatbots, the ''avoid all chatbots'' message is likely not realistic, nor
+      the most helpful message for most families.'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '
+
+      Total privacy risks from data collection.'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '
+
+      GenAI can hallucinate (generate made-up content) and may not handle mental health
+      emergencies appropriately.'
+    found: true
+    checked_against: page
+    passage: feedback, often lack expert oversight or safety protocols, and haven't
+      gone through the same testing as medical tools. GenAI can hallucinate (generate
+      made-up content) and may not handle mental health emergencies appropriately.
+      An [evaluation](https://pubmed.ncbi.nlm.nih.gov/41370787/) of GenAI psychotherapy
+      chatbots used by youth were rated by
+  - text: '
+
+      We encourage families to set privacy defaults to the most protective option.'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '
+
+      AI companions were not recommended for children and teens under the age of 18
+      by Common Sense Media.'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: academic research definition AI companion for teens
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: medium
+  auditor_confidence: low
+  verdict_agrees: true
+  confidence_agrees: false
+  needs_review: false
+  auditor_reasoning: Both source documents describe a 2025 survey of U.S. teens. Source
+    1 reports that 75% of teens use AI companions and that a third have chosen an
+    AI companion over a human for serious conversations. Source 2 reports that 72%
+    of teens have used an AI companion at least once and that 31% say conversations
+    with AI are as satisfying—or more satisfying—than with people. These figures directly
+    corroborate the claim that most teens had used an AI companion and that roughly
+    one‑third chose one over a person for serious talk. Because the evidence comes
+    from the same self‑reported survey, confidence is capped at low.
+  evidence_gaps: []
+  needs_review_reasons: []
+  pipeline_verdict: 'true'
+  pipeline_confidence: medium
+  rule_applied: agreed
+human_review:
+  reviewed_at: '2026-11-17'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null
+  verdict_override: null
+analyst_record:
+  title: In a 2025 US survey, most teens had used an AI companion and a third had
+    picked one over a person for a serious talk.
+  seo_title: '2025 teen AI survey: most use third prefer'
+  verdict: 'true'
+  cap_rationale: null
+  uncited_by_title:
+  - 2025/talk-trust-and-trade-offs-how-and-why-teens-use-ai-companions
+  - 2026/teens-using-ai-companions-prefer-131300313html

@@ -1,0 +1,634 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-11-09T06:12:59.642438+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+  run_id: 197c7dcd884146dc9bdab07f6046d4c2
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  rejected:
+  - url: https://blog.stackaware.com/p/opt-out-of-chatgpt-data-sharing
+    title: Opt-out of ChatGPT training - by Walter Haydock
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/news/chatgpt-no-longer-comply-ask-220913350.html
+    title: ChatGPT will no longer comply if you ask it to repeat a word 'forever'—
+      after a recent prompt revealed training data and personal info
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://africa.businessinsider.com/news/chatgpt-will-no-longer-comply-if-you-ask-it-to-repeat-a-word-forever-after-a-recent/j57pec8
+    title: ChatGPT will no longer comply if you ask it to repeat a word 'forever'—
+      after a recent prompt revealed training data and personal info | Business Insider
+      Africa
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.reddit.com/r/OpenAI/comments/1v4djcv/to_stop_chatgpt_training_on_my_data_is_it
+    title: 'To stop ChatGPT training on my data, is it sufficient to turn off "improve
+      the model for everyone" or do we ALSO need submit a request to the privacy portal?
+      Is this a dark pattern? : r/OpenAI'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.businessinsider.com/walmart-warns-workers-dont-share-sensitive-information-chatgpt-generative-ai-2023-2
+    title: 'ChatGPT Privacy Concerns: Walmart Says Not to Discuss Trade Secrets With
+      the AI - Business Insider'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://botpenguin.com/blogs/data-sources-of-chatgpt
+    title: Where Does ChatGPT Get its Data From?
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/news/openai-offers-privacy-options-chatgpt-170006367.html
+    title: OpenAI Offers New Privacy Options for ChatGPT
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/amp/2026/01/07/openai-chatgpt-health-medical-records.html
+    title: OpenAI launches ChatGPT Health to connect user medical records
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/2026/01/07/openai-chatgpt-health-medical-records.html?msockid=3ff2f64fab6d64083a5fe093aa4c65c9
+    title: OpenAI launches ChatGPT Health to connect user medical records
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/2026/04/11/openai-identifies-security-issue-involving-third-party-tool.html
+    title: OpenAI identifies security issue involving third-party tool
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/amp/2026/04/11/openai-identifies-security-issue-involving-third-party-tool.html
+    title: OpenAI identifies security issue involving third-party tool
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://sequirly.com/blog/does-chatgpt-train-on-your-data
+    title: Does ChatGPT Train on Your Data? Every Plan Explained
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://proton.me/lumo/ai/is-chatgpt-safe
+    title: Is ChatGPT safe? It's complicated. Here's why. | Proton
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.mdpi.com/1999-5903/17/11/511
+    title: Privacy Concerns in ChatGPT Data Collection and Its Impact on Individuals
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/news/apple-reportedly-exploring-third-party-113900918.html
+    title: Apple reportedly exploring third-party AI to revamp Siri
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://spellbook.com/learn/is-chatgpt-private
+    title: Is ChatGPT Private? A Lawyer’s Guide to Securing Confidential Client Data
+      - Spellbook
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://linke.ro/blog/linktree-ai-training-policy-2026-explained
+    title: Does Linktree Use AI? Training, ChatGPT and Opt-Out (2026) | Linkero
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://arxiv.org/html/2504.18044v1
+    title: 'AI Ethics and Social Norms: Exploring ChatGPT’s Capabilities From What
+      to How'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://lamarr-institute.org/blog/ai-training-data-bias
+    title: 'Ethical Use of Training Data: Ensuring Fairness & Data Protection in AI'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://community.openai.com/t/subject-feedback-on-ai-ethics-transparency-and-user-safety/1262788
+    title: 'Subject: Feedback on AI Ethics, Transparency, and User Safety - Use cases
+      and examples - OpenAI Developer Community'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.ibm.com/think/topics/ai-ethics
+    title: What is AI Ethics? | IBM
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://operationhope.org/initiatives/ai-ethics-council
+    title: AI Ethics Council (AIEC®) - Operation HOPE
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://ethicsunwrapped.utexas.edu/video/the-black-box-transparency-trust-ai
+    title: 'AI Transparency & Trust: The Black Box - Ethics Unwrapped'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://digital-strategy.ec.europa.eu/en/library/ethics-guidelines-trustworthy-ai
+    title: Ethics guidelines for trustworthy AI | Shaping Europe’s digital future
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.unesco.org/en/artificial-intelligence/recommendation-ethics
+    title: Ethics of Artificial Intelligence - AI | UNESCO
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/715831/Data_Ethics_Workbook.pdf
+    title: Data and AI Ethics Framework - GOV.UK
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.businessinsider.com/ai-100-top-12-people-policy-ethics-and-research-2023-11
+    title: The Top 12 People in AI Policy, Ethics, and Research - Business Insider
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://estuary.dev/blog/chatgpt-custom-data
+    title: 'Build a Data Pipeline for AI: Use ChatGPT on Your Own Data'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://helply.com/blog/how-to-train-chatgpt-on-your-own-data
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.linkedin.com/posts/avi-hacker_did-you-know-openai-might-be-using-your-chatgpt-activity-7303452992534425600-STO2
+    title: How to protect your ChatGPT conversations from OpenAI | Avi Hacker, J.D.
+      posted on the topic | LinkedIn
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.reddit.com/r/ChatGPTCoding/comments/1gnw5rt/does_chatgpt_use_my_personal_data_to_improve_the
+    title: 'Does ChatGPT use my personal data to improve the model or tailor responses
+      specifically for me? : r/ChatGPTCoding'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.businessinsider.com/google-researchers-openai-chatgpt-to-reveal-its-training-data-study-2023-12
+    title: Google Researchers Got ChatGPT to Reveal Its Training Data, Study - Business
+      Insider
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://cryptorank.io/news/feed/15f84-anthropic-to-protect-user-data-llm-training
+    title: Anthropic promises to protect user data in its LLM training
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.businessinsider.com/openais-latest-chatgpt-version-hides-training-on-copyrighted-material-2023-8
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.indeed.com/q-chatgpt-user-jobs.html
+    title: 'Now Hiring: 1,000 Chatgpt User Jobs | Indeed'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.bakerdonelson.com/openai-updates-usage-policies-key-considerations-and-next-steps-for-organizations-deploying-ai
+    title: 'OpenAI Updates Usage Policies: Key Considerations and Next Steps for Organizations
+      Deploying AI | Baker Donelson'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.linkedin.com/posts/legalitnews_openai-changes-chatgpts-usage-policy-to-activity-7391194705759272960-vCcp
+    title: OpenAI updates ChatGPT policy to exclude legal advice | Caroline Hill posted
+      on the topic | LinkedIn
+    score: null
+    reason: scored below 3 on every sub-question
+  queries:
+  - ChatGPT privacy policy data usage training
+  - OpenAI ChatGPT user conversations training data sources
+  - third party reports ChatGPT user data training
+  - ETC or AI ethics groups ChatGPT data transparency
+  - ChatGPT training pipeline user data inclusion
+  - OpenAI policy change ChatGPT user data training 2023
+  planner_rationale: The sub-questions cover first-party sources (official policy),
+    third-party validations (transparency reports), technical details (training pipeline),
+    and explicit counter-evidence (policy changes or retractions), ensuring a comprehensive
+    assessment of the claim.
+  candidates_seen: 51
+  urls_kept: 12
+  urls_dropped: 37
+  scorer_rationale: "**Kept Candidates (**Score ≥ 3 for at least one sub-question**):\n\
+    \n1. **`voicetechhub.com`**: **Score 5 for sq1 and sq4**\n   - Directly references\
+    \ OpenAI's privacy policy for ChatGPT, including opt-out mechanisms for training\
+    \ data.\n   - Mentions policy changes and risks associated with user data post-March\
+    \ 2023.**\n\n2. **`openai.com/policies/row-privacy-policy`**: **Score 5 for sq1\
+    \ and sq4**\n   - **Primary source**: OpenAI's official privacy policy explicitly\
+    \ states that user content (e.g., conversations) may be used to improve models,\
+    \ with an opt-out option. Addresses policy updates post-2023.**\n\n3. **`ai.byu.edu/chatgpt-privacy`**:\
+    \ **Score 5 for sq1 and sq4**\n   - Explains OpenAI's opt-out setting for user\
+    \ conversations, aligning with sq1’s focus on privacy transparency.\n   - Discusses\
+    \ policy updates (e.g., March 2023 changes) for sq4.**\n\n4. **`datanorth.ai/blog/chatgpt-data-privacy`**:\
+    \ **Score 5 for sq1 and sq3**\n   - Lists technical details of opt-out mechanisms\
+    \ and data control settings for sq1 and sq3.\n   - Directly discusses user data\
+    \ opt-out and retention policies.**\n\n5. **`openai.com/enterprise-privacy`**:\
+    \ **Score 5 for sq1, sq3, and sq4**\n   - **Primary source**: Delineates data\
+    \ training exclusions for APIs, Enterprise, and user opt-in/opt-out policies.\n\
+    \   - Provides technical context about post-launch data usage (sq3) and policy\
+    \ updates (sq4).\n\n6. **`help.openai.com/how-chatgpt-developed`**: **Score 5\
+    \ for sq1 and sq3**\n   - **Primary source**: Detailing OpenAI’s use of public,\
+    \ third-party, and user-sourced data for model training (alignment with sq1’s\
+    \ third-party sources).\n   - Clarifies the exclusion of paywalled data for sq3.**\n\
+    \n7. **`help.openai.com/data-controls-chatgpt`**: **Score 5 for sq1 and sq4**\n\
+    \   - **Primary source**: Explains ChatGPT’s data controls, including opt-outs\
+    \ for model training (sq1) and guidance on policy enforcement (sq4).\n\n8. **`searchable.com/blog/where-does-chatgpt-get-its-data`**:\
+    \ **Score 5 for sq1 and sq3**\n   - States ChatGPT’s data is derived from public\
+    \ sources, excluding private paywalled data by default.\n   - Confirms opt-out\
+    \ capabilities for sq1.**\n\n9. **`medium.com/@neloverar/data-training`**: **Score\
+    \ 5 for sq3**\n   - Details ChatGPT’s collation of public data (e.g., literature,\
+    \ general web content) for training.\n   - Explicitly excludes user private data\
+    \ for sq3 and lists measures for opt-out.**\n\n10. **`openai.com/pdf/a253471f-8260-40c6-a2cc-aa93fe9f142e`**:\
+    \ **Score 4 for sq2**\n    - **Primary source**: ReadDirectly addresses transparency\
+    \ in data usage for enterprise policiesocking **sq2** through aggregated usage\
+    \ and privacy compliant data collection**.**, though limited to specific datasets.**\n\
+    \n---**\n\n### Dropped Candidates (Score < 3 for all sub-questions) or Ignored**:\n\
+    - **Low-quality publishers (e.g., Reddit, Quora)** or **lacking specificity**\
+    \ (e.g., generic privacy risks/guides) failed relevance.\n- **policy workaround\
+    \ posts (e.g., `stackaware.com`, `reddit.com`)** fell into `forum` quality and\
+    \ added redundant/speculative claims.\n- ** duplicative/integrations-focused sites\\\
+    (e.g., `linke.ro`)** are excluded for lack of ChatGPT-specific evidence.\n- **...\
+    \ forums**: Irrelevant or mixing two unrelated concepts (e.g., rulesets with training).\n\
+    ---**\n\nKey themes revisited:\n- **SQ1**: Mitigated by 6 primary/secondary sources\
+    \ with OpenAI’s explicit policy transparency.\n- **SQ3**: Covered via technical\
+    \ details of data sources, pipeline practices, and API payloads. Opt-in/out scope\
+    \ confirmed in training.\n- **SQ4**: Reflected in March 2023 policy shifts for\
+    \ APIs/consumer tiers. Opt-in mechanisms Material to validity."
+  urls_after_blocklist: 12
+sub_questions:
+- id: sq1
+  question: What does OpenAI’s official privacy policy state about whether ChatGPT
+    uses user conversations for training?
+  rationale: First-party transparency is critical for assessing claims about data
+    usage in AI training.
+  kind: coverage
+  queries:
+  - ChatGPT privacy policy data usage training
+  - OpenAI ChatGPT user conversations training data sources
+  citations:
+  - 2023/chatgpt-and-data-policy-a-simple-guide
+  - 2026/enterprise-privacy
+  - 2026/chatgpt-data-privacy-key-insights-on-security-and-privacy
+  - 2026/7842364-how-chatgpt-and-our-foundation-models-are-developed
+  - 2026/row-privacy-policy
+  - 2026/where-does-chatgpt-get-its-data
+  - 2024/chatgpt-privacy-model-training-and-more
+  snippet_only: []
+- id: sq2
+  question: Have third-party investigations or transparency reports (e.g., from ETC
+    or AI ethics groups) confirmed or disputed OpenAI’s claim about ChatGPT’s data
+    usage for training?
+  rationale: Third-party investigations provide independent validation or counter-evidence
+    to OpenAI’s assertions.
+  kind: coverage
+  queries:
+  - third party reports ChatGPT user data training
+  - ETC or AI ethics groups ChatGPT data transparency
+  citations:
+  - 2025/economic-research-chatgpt-usage-paperpdf
+  snippet_only: []
+- id: sq3
+  question: What technical details are available about ChatGPT’s training data pipeline,
+    including data sources post-Launch (e.g., user interactions, scraping)?
+  rationale: Understanding the technical pipeline reveals whether user data is intentionally
+    or inadvertently included.
+  kind: coverage
+  queries:
+  - ChatGPT training pipeline user data inclusion
+  citations:
+  - 2026/enterprise-privacy
+  - 2026/chatgpt-data-privacy-key-insights-on-security-and-privacy
+  - 2026/7842364-how-chatgpt-and-our-foundation-models-are-developed
+  - 2026/where-does-chatgpt-get-its-data
+  snippet_only: []
+- id: sq4
+  question: Has OpenAI ever updated or altered its data usage policies for ChatGPT
+    after initial claims were made, particularly around user data?
+  rationale: Policy updates or retractions would directly contradict the claim if
+    they reveal post-launch inclusion of user data.
+  kind: counter-evidence
+  queries:
+  - OpenAI policy change ChatGPT user data training 2023
+  citations:
+  - 2023/chatgpt-and-data-policy-a-simple-guide
+  - 2026/enterprise-privacy
+  - 2026/row-privacy-policy
+  - 2024/chatgpt-privacy-model-training-and-more
+  snippet_only: []
+sources_consulted:
+- id: 2025/economic-research-chatgpt-usage-paperpdf
+  url: https://cdn.openai.com/pdf/a253471f-8260-40c6-a2cc-aa93fe9f142e/economic-research-chatgpt-usage-paper.pdf
+  title: 'How People Use ChatGPT: An Economic Analysis of Usage Patterns'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"Practical Guidance, Seeking Information, and Writing are the three most
+      common topics, accounting for nearly 80% of all conversations."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Non-work-related messages grew from 53% to 73% of all usage between June
+      2024 and June 2025."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"We find that educated users and professionals are substantially more likely
+      to use ChatGPT for work-related tasks."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: OpenAI ChatGPT user conversations training data sources
+- id: 2023/chatgpt-and-data-policy-a-simple-guide
+  url: https://www.voicetechhub.com/chatgpt-and-data-policy-a-simple-guide
+  title: 'ChatGPT and Data Policy: A Simple Guide'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"OpenAI will not use data submitted by customers via our API to train or
+      improve our models, unless you explicitly decide to share your data."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"When you use our non-API services like ChatGPT, we may use the data you
+      provide to improve our models"'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: ChatGPT privacy policy data usage training
+- id: 2026/enterprise-privacy
+  url: https://openai.com/enterprise-privacy
+  title: Enterprise Privacy at OpenAI
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: We do not train our models on your data by default
+    found: true
+    checked_against: page
+    passage: for Teachers and our API Platform) and support for your compliance needs.
+      Ownership You own and control your data * We do not train our models on your
+      data by default * You own your inputs and outputs (where allowed by law) * You
+      control how long your data is retained (ChatGPT
+  - text: You own and control your data
+    found: true
+    checked_against: page
+    passage: Healthcare, ChatGPT Edu, ChatGPT for Teachers and our API Platform) and
+      support for your compliance needs. Ownership You own and control your data *
+      We do not train our models on your data by default * You own your inputs and
+      outputs (where allowed by law) *
+  - text: OpenAI encrypts all data at rest (AES-256) and in transit between our customers
+      and us, and between us and our service providers (TLS 1.2+)
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  shared_with:
+  - 2026/row-privacy-policy
+  acquisition:
+    stage: research
+    origin: tavily
+    query: ChatGPT privacy policy data usage training
+- id: 2026/chatgpt-data-privacy-key-insights-on-security-and-privacy
+  url: https://datanorth.ai/blog/chatgpt-data-privacy-key-insights-on-security-and-privacy
+  title: 'ChatGPT Data Privacy: Key Insights on Security and Privacy'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Yes. Conversations stay in your account until you delete them. Deleted chats
+      and Temporary Chats leave OpenAI systems within 30 days, unless a legal or security
+      obligation applies.
+    found: true
+    checked_against: page
+    passage: 'in 2026: the short answer If you only read one section, read this one.
+      All of it is explained in more detail below. * **Does ChatGPT save your data?**
+      Yes. Conversations stay in your account until you delete them. Deleted chats
+      and Temporary Chats leave OpenAI systems within 30 days, unless a legal or security
+      obligation applies. * **Does it train on your data?** On Free, Go, Plus and
+      Pro, yes, by default. You can switch this off. On Business,'
+  - text: Partly, and the distinction matters more than most summaries admit. ChatGPT
+      is not end-to-end encrypted.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: OpenAI does not sell your conversations. It does share data with service
+      providers and must hand over data under a valid legal order.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: The biggest practical risk is not OpenAI. It is employees pasting client
+      data, patient records or credentials into a personal account.
+    found: true
+    checked_against: page
+    passage: 'a data processing agreement, which OpenAI offers for Business, Enterprise
+      and the API, but not for consumer accounts. * **The biggest practical risk**
+      is not OpenAI. It is employees pasting client data, patient records or credentials
+      into a personal account. Last verified: September 2026. Policies in this area
+      change often, so check OpenAI''s own documentation before you rely'
+  - text: Your right to erasure is only as durable as the litigation your provider
+      is exposed to.
+    found: true
+    checked_against: page
+    passage: between April and September 2025 sits in a separate legal hold and a
+      sample of it is being analysed by outside parties. Your right to erasure is
+      only as durable as the litigation your provider is exposed to. For anything
+      you could not defend in a courtroom, the control is not deleting afterwards,
+      it is not sending it in the
+  acquisition:
+    stage: research
+    origin: tavily
+    query: ChatGPT privacy policy data usage training
+- id: 2026/7842364-how-chatgpt-and-our-foundation-models-are-developed
+  url: https://help.openai.com/en/articles/7842364-how-chatgpt-and-our-foundation-models-are-developed
+  title: How ChatGPT and OpenAI's Foundation Models Are Developed
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"OpenAI’s foundation models... are developed using... information that
+      is publicly available on the internet, and information that our users, human
+      trainers, and researchers provide or generate."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Machine learning models consist of large sets of numbers... called ''weights''
+      or ''parameters''... do not store or retain copies of the data they are trained
+      on."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Website owners can manage whether publicly available content... may be
+      accessed for use in training by using standard web controls like robots.txt."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: OpenAI ChatGPT user conversations training data sources
+- id: 2026/row-privacy-policy
+  url: https://openai.com/policies/row-privacy-policy
+  title: Rest of World (ROW) Privacy Policy
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"At OpenAI, our mission is to ensure that artificial general intelligence
+      benefits everyone. We at OpenAI (...) are committed to respecting your privacy."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"We collect Personal Data You Provide, such as your Account Information,
+      User Content, Communication Information, and other information directly from
+      you."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"We also aggregate or de-identify Personal Data so that it no longer identifies
+      you and use this information to analyze our Services, improve features, and
+      conduct research."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"You can control whether your Content can be used to improve and train
+      our models."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Services like ChatGPT generate responses by predicting likely next words,
+      which may not always be factually accurate.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  shared_with:
+  - 2026/enterprise-privacy
+  acquisition:
+    stage: research
+    origin: tavily
+    query: ChatGPT privacy policy data usage training
+- id: 2026/where-does-chatgpt-get-its-data
+  url: https://www.searchable.com/blog/where-does-chatgpt-get-its-data
+  title: Where Does ChatGPT Get Its Data? Training Data and Sources
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: 'ChatGPT draws on five layers of information: pre-training data from Common
+      Crawl''s 250 billion web pages, fine-tuning datasets, human feedback through
+      RLHF, real-time web search, and system prompts.'
+    found: true
+    checked_against: page
+    passage: '[David Thomas](/authors/david-thomas) SEO & Content Writer Updated on
+      16 min read Drafted by JP Garbaccio TL;DR: ChatGPT draws on five layers of information:
+      pre-training data from Common Crawl''s 250 billion web pages, fine-tuning datasets,
+      human feedback through RLHF, real-time web search, and system prompts. What
+      it cites in live answers can change quickly: in August 2026, ChatGPT sharply
+      cut how often it uses Reddit as a'
+  - text: GPT-4 was trained on roughly 13 trillion tokens of text and code.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Brands that appear consistently across independent, trusted sources are
+      far more likely to be recommended by LLMs.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: 'In August 2026, ChatGPT sharply cut its use of Reddit as a source: the
+      share of answers with a Reddit source fell from 24.1% to 1.9% in Searchable
+      data.'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: If your brand isn't well-represented across the trusted sources that feed
+      into LLM training, AI tools are unlikely to recommend you.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: third party reports ChatGPT user data training
+- id: 2024/chatgpt-privacy-model-training-and-more
+  url: https://ai.byu.edu/chatgpt-privacy-model-training-and-more
+  title: 'ChatGPT: Privacy, Model Training, and More'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: ChatGPT now allows all users to choose if they want to allow their chats
+      to be used to train OpenAI's models.
+    found: true
+    checked_against: page
+    passage: 3 of 3 Screenshot 2024-05-06 at 2.01.37 PM.png 1 of 3 ChatGPT now allows
+      all users to choose if they want to allow their chats to be used to train OpenAI's
+      models. Allowing this means that OpenAI can read the conversations that users
+      have with ChatGPT and learn from those
+  - text: To disable model training, navigate to your profile icon on the top left
+      of the page and select Settings > Data Controls, and disable "Improve the model
+      for everyone".
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Temporary chats is another way to restrict model training. The chats will
+      not appear in chat history and are retained for up to 30 days.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: ChatGPT privacy policy data usage training
+audit:
+  analyst_verdict: 'false'
+  auditor_verdict: 'false'
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: true
+  auditor_reasoning: Source 1 (Voicetechhub) states that non‑API user inputs may be
+    used for model improvements, indicating that by default consumer conversations
+    are used for training unless the user opts out. Source 2 only addresses enterprise
+    customers, where the default is not to train on data, which does not affect the
+    consumer default. The other sources do not provide contrary evidence about the
+    consumer default. Therefore, the claim that "ChatGPT does not use user data for
+    training" is false for the default consumer experience.
+  evidence_gaps:
+  - No primary OpenAI consumer privacy policy document is cited; the assessment relies
+    on secondary summaries.
+  - The BYU article notes a user choice but does not clarify the default setting for
+    consumer accounts.
+  needs_review_reasons:
+  - 2+ evidence gaps
+  pipeline_verdict: 'false'
+  pipeline_confidence: medium
+  rule_applied: agreed
+human_review:
+  reviewed_at: '2026-11-17'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null
+  verdict_override: null
+analyst_record:
+  title: ChatGPT does not use user data for training
+  seo_title: ChatGPT does not use user data training
+  verdict: 'false'
+  cap_rationale: null
+  uncited_by_title:
+  - 2023/chatgpt-and-data-policy-a-simple-guide
+  - 2026/enterprise-privacy
+  - 2026/chatgpt-data-privacy-key-insights-on-security-and-privacy
+  - 2024/chatgpt-privacy-model-training-and-more

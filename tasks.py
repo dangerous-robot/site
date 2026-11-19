@@ -22,6 +22,24 @@ def setup(ctx):
 
 
 @task
+def install_hooks(ctx):
+    """Link the repo's git hooks into this checkout (an existing hook file is left alone)."""
+    hooks_dir = ctx.run("git rev-parse --git-path hooks", hide=True).stdout.strip()
+    for name in ("pre-commit", "pre-push"):
+        link = f"{hooks_dir}/{name}"
+        target = f"../../scripts/git-hooks/{name}"
+        current = ctx.run(f"readlink {shlex.quote(link)}", hide=True, warn=True)
+        if current.ok and current.stdout.strip() == target:
+            print(f"{name}: already linked")
+            continue
+        if ctx.run(f"test -e {shlex.quote(link)}", hide=True, warn=True).ok:
+            print(f"{name}: {link} exists and is not the repo's hook; left alone")
+            continue
+        ctx.run(f"ln -s {shlex.quote(target)} {shlex.quote(link)}")
+        print(f"{name}: linked")
+
+
+@task
 def dev(ctx):
     """Start the Astro dev server."""
     ctx.run("npm run dev", pty=True)
@@ -384,6 +402,7 @@ audit_ns.add_task(_audit_prune, name="prune")
 
 ns = Collection()
 ns.add_task(setup)
+ns.add_task(install_hooks)
 ns.add_task(dev)
 ns.add_task(build)
 ns.add_task(lint)

@@ -4,6 +4,28 @@ Settled product decisions for dangerousrobot.org, newest first. Plans in `docs/p
 
 Decisions made before 2026-10-04 (mission, audience, positioning, trust model, content model, messaging, early roadmap) are in the private Drive discovery records and their Decisions Log, frozen on 2026-10-04 as history. The last Drive entries cover the version reset and the About and Values revision.
 
+## 2026-11-17
+
+- **Two kinds of release.** Normal site pages carry no beta label, have a lower bar and can ship one or two at a time as a site push (`1.0.0-beta.N.1`). Research pages and the pipeline carry the beta label and ship as a beta release (next `1.0.0-beta.N`) with more checks. A push that carries any research, pipeline or claim change is a beta release and ships everything on `main`; a site push is allowed only when nothing but site files changed since the last tag. A normal page that shows claim data counts as site when only its copy or layout changes, and as research when its claims or verdicts change. Checks for each kind: [`runbook.md`](runbook.md) § Releasing. *(Final)*
+- **Beta continues.** The beta label stays for another five to ten releases or more, until the research site is reliable and defensible. *(Final)*
+- **Agents hold the line on releases.** A beta takes a sixth open entry only with Brandon's explicit OK. Agents push back when a request would add unscheduled work to the beta in progress, ship research content without a beta number, or skip a release check. No pull requests; commits go straight to `main`. *(Final)*
+
+## 2026-11-09
+
+- **Rank 8 of the first queue runs as a floor, not its top restatement.** The weak-verdict rule's "take the top restatement once" is skipped when that restatement is an exact count that grows daily (1,598 court proceedings by June 2026); the sentence is rewritten as a floor the record supports ("more than a thousand filings by mid-2026") and run once. One-off exception; the rule stands. *(Final)*
+
+## 2026-11-08
+
+- **Research content is its own stream.** Status and planning keep three streams apart: site updates, research pipeline code, and research content (claims, sources, drafts, rechecks). The content stream's principles, candidate queue and scouting step live in [`research-content.md`](research-content.md). *(Final)*
+- **Corpus target: about ten elephant-in-the-room claims.** The site goes from two high-profile claims to about ten that test something most readers assume about AI's environmental or societal effects, both dangers covered; the ranked queue is in `research-content.md`. An `unverified` verdict is published only when the gap is itself the lesson. *(Final)*
+- **No forecast in the site's voice.** A claim that rests on a projection names the forecaster in its sentence; the site never states a projection as its own finding (mission-and-voice rule 2, applied to claims). *(Final)*
+- **Entity claims need no guide.** A claim about a product or company may be drafted without a guide page that requires it. *(Final)*
+- **Seeding a run is allowed, with corroboration.** A hand-picked source may be stored before a run (`dr draft --source URL`) as a starting point; the pipeline's own search must corroborate it, and a verdict resting only on seeds stays `unverified`. Replaces the 2026-10-10 operator rule against seeding. *(Final)*
+- **Counter-thesis claims case by case.** A claim whose verdict favors AI's producers is allowed when it teaches, decided one claim at a time. *(Final)*
+- **Scouting before the pipeline.** A memory-only strong-model pass scores a candidate sentence (elephant, teaching value, durability, forecast check) and recommends run, hold or drop before any paid run; its brief is a `research/reports/` file with `report_type: brief`; it never seeds the run it recommends. *(Final)*
+- **Claim sentences stay short.** A claim sentence stays well under 150 characters; detail goes to the narrative. *(Final)*
+- **First queue: weak-verdict rule, budget and delegation.** Fourteen paid runs for the first queue (eleven planned, three restatements), which an agent may run within that budget; a weak verdict gets one restatement retry, then the draft is archived and the next reserve runs; a capped or abandoned run waits for the operator; every sign-off is the operator's. Rank 4 (training on conversations) runs as three product claims under `no-training-on-user-data`, with a new `products/meta-ai` entity. *(Final)*
+
 ## 2026-10-11
 
 - **Operator's cap reason survives refresh.** When `fit_verdict_to_written_pool` lowers a claim's evidence level, it writes a `cap_rationale` only when the claim has none; a reason the operator wrote is kept on every later refresh, even when the level or confidence changes, until the operator changes it (confirmed 2026-10-11; RE-AK, Published fields survive the pipeline). *(Final)*

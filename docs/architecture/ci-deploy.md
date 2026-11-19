@@ -6,7 +6,7 @@ How continuous integration, deployment, and quality checks work for the Dangerou
 
 **Trigger:** Pull requests targeting `main`. The workflow also declares `workflow_call`, so the deploy pipeline can reuse it as a verification gate.
 
-Four jobs run in parallel on `ubuntu-latest`:
+Five jobs run in parallel on `ubuntu-latest`:
 
 **`check`** (Node 22). The job sets `WATCH_DATA: fixture`, so `/watch` is built from the invented fixture data with no network and no API key. Steps run sequentially so a failure in an earlier step short-circuits the rest:
 
@@ -38,6 +38,13 @@ The checkout, setup-node and upload-artifact steps in `e2e` are pinned by commit
 1. Installs `uv` the same way as `lint-content` and runs `uv sync --locked`.
 2. Runs `uv run python -m pytest -m 'not acceptance'` from `pipeline/`, so pytest reads that directory's `pyproject.toml`. Acceptance tests call live APIs and need keys, so CI leaves them out.
 
+**`worker-tests`** (Node 22, 10-minute limit). Runs the petition Worker's checks from `workers/api/`, which has its own `package.json` and lockfile:
+
+1. `npm ci` (setup-node caches against `workers/api/package-lock.json`), then `npm run check:types` (`tsc --noEmit`).
+2. `npm test` -- the Vitest suite, run inside workerd by `@cloudflare/vitest-pool-workers`. `vitest.config.ts` reads `./migrations` relative to the working directory, so the job sets `working-directory: workers/api`. It needs no secrets: the config passes stand-in keys as bindings, and the tests replace `fetch`, so Turnstile and Resend are never called.
+
+The checkout and setup-node steps use the same SHA pins as `e2e`. The job only tests the Worker; deploying it stays manual (`inv worker-deploy`).
+
 If any job fails, the PR check fails.
 
 ## Deploy Workflow (`.github/workflows/deploy.yml`)
@@ -46,7 +53,7 @@ If any job fails, the PR check fails.
 
 Three-job pipeline:
 
-1. **verify** -- Reuses the CI workflow (`ci.yml`) via `workflow_call`, so the same `check`, `e2e`, `lint-content` and `pipeline-tests` jobs gate every deploy.
+1. **verify** -- Reuses the CI workflow (`ci.yml`) via `workflow_call`, so the same `check`, `e2e`, `lint-content`, `pipeline-tests` and `worker-tests` jobs gate every deploy.
 2. **build** -- Depends on `verify`. Checks out the repo, runs the release tag check (below), installs deps, runs `npm run build` with the YouTube key, runs `npm run check:watch` in deploy context, runs `npm run check:flyers`, removes `dist/admin`, and uploads `dist/` as a Pages artifact.
 3. **deploy** -- Depends on `build`. Deploys the artifact to GitHub Pages using `actions/deploy-pages@v5`.
 
@@ -54,7 +61,7 @@ Three-job pipeline:
 
 `/watch` shows playlist and video data fetched from the YouTube Data API at build time. The YouTube API Services Developer Policies allow that data to be stored for at most 30 days, and nothing from the API is committed, so the page is rebuilt every week.
 
-A scheduled run uses the same jobs as a push deploy, with no job conditions and no checkout options: it checks out the latest commit on `main`, which the push deploy for that commit has already shipped, so the only change it publishes is fresher YouTube data. Because it goes through `verify`, a red `main` (`check`, `e2e`, `lint-content` or `pipeline-tests`) also blocks the weekly refresh, and the last good deploy stays live. Playwright retries a failed test once in CI, so one flaky test does not block it.
+A scheduled run uses the same jobs as a push deploy, with no job conditions and no checkout options: it checks out the latest commit on `main`, which the push deploy for that commit has already shipped, so the only change it publishes is fresher YouTube data. Because it goes through `verify`, a red `main` (`check`, `e2e`, `lint-content`, `pipeline-tests` or `worker-tests`) also blocks the weekly refresh, and the last good deploy stays live. Playwright retries a failed test once in CI, so one flaky test does not block it.
 
 GitHub turns off scheduled workflows in a public repository after 60 days with no repository activity. The weekly refresh then stops and the `/watch` data grows older than the 30 days allowed; if that happens, re-enable the "Deploy to GitHub Pages" workflow in the repository's Actions tab.
 
@@ -72,6 +79,20 @@ Key settings:
 - **Concurrency group:** `pages` with `cancel-in-progress: false` -- queues deploys rather than canceling in-flight ones.
 - **Permissions:** `contents: read`, `pages: write`, `id-token: write` (OIDC for Pages).
 - **Custom domain:** A `CNAME` file in `public/` maps to `dangerousrobot.org`.
+
+## Scheduled Recheck Workflow (`.github/workflows/recheck.yml`)
+
+**Trigger:** the weekly schedule (`cron: '17 7 * * 1'`, Mondays 07:17 UTC, an hour after the deploy schedule) or manual dispatch. It deploys nothing.
+
+One job, `recheck`, with `timeout-minutes: 120` (a starting value, not a measurement: each due claim runs the full loop with archive.org captures). It checks out `main` with full history (`fetch-depth: 0`, so the script can tell whether the last batch's branch is merged), installs the pipeline with `uv sync --locked`, and runs `scripts/scheduled-recheck.sh`, which runs `dr recheck --due` and `dr findings` and pushes every change under `research/` to the `actions/recheck` branch. The operator procedure, the skip rule and the secrets are in `docs/runbook.md` § Scheduled rechecks.
+
+Key settings:
+
+- **Permissions:** `contents: read` at the top level; the job holds `contents: write`, which the script uses only for the push to `actions/recheck`. The checkout keeps no credentials (`persist-credentials: false`); the script sends `GITHUB_TOKEN` on its own fetch and push calls, as `actions/checkout` does.
+- **Concurrency group:** `recheck` with `cancel-in-progress: false`, so a long paid run and the next scheduled run never overlap.
+- **Secrets:** `GREENPT_API_KEY` and `TAVILY_API_KEY`, passed to the recheck step only.
+- **No downstream runs:** a push made with `GITHUB_TOKEN` triggers no workflow, so `actions/recheck` gets no CI; `ci.yml` runs when the batch reaches `main`.
+- **Inactivity rule:** the same 60-day rule as the weekly deploy applies; see that section.
 
 ## Quality Checks (`npm run check`)
 
@@ -146,7 +167,7 @@ The browser test `tests/e2e/petition-qr.spec.ts` decodes the QR code on the peti
 
 ## Release Tag Check
 
-`bash scripts/check-release-tag.sh <commit>` runs first in the deploy `build` job against the pushed commit. `VERSION.md` says every deploy bumps the beta number and gets a tag, and this step enforces it: the build fails unless the tag `v<first line of VERSION.md>` points at that commit and the active roadmap (the `Active release:` line of `VERSION.md`) has a Releases row for that version. The runner's checkout is shallow, so the script fetches that one tag over https before checking. The failure message prints the bump-and-tag steps. Run it locally with no argument to check `HEAD`; it exits 1 on an untagged commit. See `docs/runbook.md` § Releasing.
+`bash scripts/check-release-tag.sh <commit>` runs first in the deploy `build` job against the pushed commit. Every push of `main` is a tagged release, either a beta release or a site push (`docs/runbook.md` § Releasing), and this step enforces the tag: the build fails unless the tag `v<first line of VERSION.md>` points at that commit and the active roadmap (the `Active release:` line of `VERSION.md`) has a Releases row for that version. The runner's checkout is shallow, so the script fetches that one tag over https before checking. The failure message prints the bump-and-tag steps. Run it locally with no argument to check `HEAD`; it exits 1 on an untagged commit. For a four-part version (a site push, `beta.N.M`) it also compares the commit with the tag it follows (`beta.N.(M-1)`, or `beta.N` when M is 1; fetched the same way) and fails when any research file changed: anything under `research/`, `pipeline/` or `src/pages/research/`, `scripts/scheduled-recheck.sh` or `.github/workflows/recheck.yml`. The failure lists the files (the first 20). A beta version skips this check. Tests: `pipeline/tests/test_check_release_tag.py`. See `docs/runbook.md` § Releasing.
 
 ## Citation Integrity
 
@@ -201,7 +222,7 @@ All other `markdownlint` defaults are enforced.
 | `check:types`      | `astro check`                                        | Type-check the site                              |
 | `check:watch`      | `tsx scripts/check-watch-page.ts`                    | Check `/watch` in `dist/` and scan for key leaks |
 | `check:flyers`     | `tsx scripts/check-flyers.ts`                        | Check petition flyer PDFs and links against `dist/` |
-| (deploy only)      | `bash scripts/check-release-tag.sh <commit>`         | Refuse an untagged deploy: tag `v<VERSION.md>` at the commit, Releases row present |
+| (deploy only)      | `bash scripts/check-release-tag.sh <commit>`         | Refuse an untagged deploy: tag `v<VERSION.md>` at the commit, Releases row present; a site push with research changes |
 | `test:site`        | `tsx --test 'src/lib/**/*.test.ts'`                  | Unit tests                                       |
 | `test:e2e`         | `playwright test`                                    | `/watch` browser tests and the petition QR decode test (Chromium, fixture build) |
 | `check`            | `npm run check:types && npm run test:site && npm run build && npm run lint:md && npm run check:citations && npm run check:reviewers && npm run check:watch && npm run check:flyers` | Run the full local quality gate (CI's `check` job runs all but check:reviewers) |

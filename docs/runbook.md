@@ -58,9 +58,10 @@ Readers report errors through the GitHub issue form `.github/ISSUE_TEMPLATE/corr
 ```bash
 gh label create correction -R dangerous-robot/site --description "Reader-reported error on a page or claim"
 gh label create source-submission -R dangerous-robot/site --description "Reader-submitted source"
+gh label create claim-request -R dangerous-robot/site --description "Reader-requested claim"
 ```
 
-Legal and safety matters go to `contact@dangerousrobot.org`, a domain alias the operator creates and points at an inbox. It is the only non-public contact path and is shown on `/about#contact`.
+Legal and safety matters go to `contact@dangerousrobot.org`, a domain alias the operator creates and points at an inbox. The same address takes corrections, source submissions and claim requests from readers without a GitHub account (subject lines on `/corrections`, the research index and `CONTRIBUTING.md`); it is shown on `/about#contact`.
 
 **Interaction limits (operator setting, not code).** To keep the correction form and the issue tracker usable, limit who can open issues and comment on the repo. This is a GitHub setting, not part of the site build:
 
@@ -85,12 +86,22 @@ If you change the verdict with `e` before approving, approval records the change
 
 ## Scheduled rechecks
 
-No job runs `dr recheck` yet; the job is a backlog row in `docs/UNSCHEDULED.md`. A job that does must do the following.
+The `Scheduled recheck` workflow (`.github/workflows/recheck.yml`) runs `scripts/scheduled-recheck.sh` on Mondays at 07:17 UTC, an hour after the weekly deploy, and on a manual dispatch from the Actions tab. Every run with a claim due is a paid run. The job:
 
-1. Run `uv run dr recheck --due` in `pipeline/`, then `uv run dr findings`. The command exits 0 unless it failed to start, so read the summary lines and the findings, not the exit code, to see which claims were abandoned.
-2. Provide the provider keys for the models in use as GitHub Actions repository secrets, named as the environment variables the pipeline reads (the model-to-variable mapping is `_required_env_for_model` in `pipeline/orchestrator/cli.py`; `_check_provider_api_keys` fails the run before any model call when one is missing). When `search_backend` is `brave`, also provide the Brave key (`_check_search_key`); the default `tavily` backend needs `TAVILY_API_KEY`, and Brave is its fallback. Today only `YOUTUBE_API_KEY` exists as a repository secret (`docs/architecture/ci-deploy.md`).
-3. Commit the pending drafts (`research/pending/`), the new sources and the findings to an Actions branch, never to main. Fetch that branch locally and review it with `dr review`; nothing is promoted without a person at a terminal.
-4. Do not run `dr review` or any sign-off in the job.
+1. Skips, green, while the `actions/recheck` branch has commits not in `main`: the last batch is still unreviewed.
+2. Runs `uv run dr recheck --due`, then `uv run dr findings`, in `pipeline/`. The command exits 0 unless it failed to start, so read the summary lines and the findings (both are copied into the run's step summary), not the exit code, to see which claims were abandoned.
+3. Commits every change under `research/` (pending drafts, new sources, findings) as `github-actions[bot]` and pushes it to `actions/recheck`, never to `main`. A run with nothing due pushes nothing.
+4. Never runs `dr review` or any sign-off.
+
+Secrets: `GREENPT_API_KEY` and `TAVILY_API_KEY` as GitHub Actions repository secrets, read by the recheck step only. The names are the environment variables the pipeline reads (`_required_env_for_model` in `pipeline/orchestrator/cli.py` maps each configured model to its variable; `_check_provider_api_keys` fails the run before any model call when one is missing). A model from another provider needs that provider's variable added to the step and to the secrets; when `search_backend` is `brave`, add the Brave key (`_check_search_key`). A run with nothing due never reads the keys.
+
+Reviewing a batch:
+
+1. `git fetch origin actions/recheck` and check the branch out in a worktree under `site-worktrees/` (use the main checkout's `pipeline/.venv`).
+2. There, `uv run dr review` from `pipeline/`; approve or leave each pending draft as usual, and close the run's findings (§ Triaging findings).
+3. Commit the sign-offs on the branch and merge it into `main`; it ships with the next tagged release (§ Releasing). Once the branch is merged the next scheduled run proceeds; deleting the branch is optional.
+
+A push made with the workflow's own token starts no other workflow, so the branch gets no CI run; its content is checked when it merges to `main`. GitHub turns off scheduled workflows in a public repository after 60 days without repository activity; if a Monday run goes missing, re-enable "Scheduled recheck" in the Actions tab. To exercise the job without a paid run, set `DR` to a stub command (the variables are listed at the top of the script) and `RECHECK_PUSH=0`, in a throwaway clone.
 
 ## Adding a product or subject
 
@@ -228,7 +239,7 @@ Five commands do all the work; `docs/architecture/pipeline-commands.md` has ever
 | Draft a claim | `uv run dr draft --entity products/<slug> "<sentence>"`, or `--criterion <slug> --entity <ref>`, or `--subject <slug> "<sentence>"`; add `--dry-run` for a free check (no model or search call, nothing written) |
 | Rerun one agent over a claim's stored sources | `uv run dr draft --claim <ref> --rerun analyst` or `--rerun evaluator` |
 | Recheck a published claim | `uv run dr recheck --claim <ref>` or `--due` (see Refreshing a published claim) |
-| Sign off | `uv run dr review` at a terminal |
+| Sign off | `uv run dr review` at a terminal, or an agent interview where Brandon runs each printed command (AGENTS.md § Tooling: dr vs inv) |
 | Triage what went wrong | `uv run dr findings` |
 | Check the content tree | `uv run dr lint` |
 
@@ -251,19 +262,163 @@ The hook calls the root `.venv/bin/dr` and fails the commit when it is missing, 
 
 ## Releasing
 
-Every push of `main` is a release: `VERSION.md` says each deploy bumps the beta number and gets a tag, and the deploy workflow refuses to build a commit that is not tagged (`scripts/check-release-tag.sh`, `docs/architecture/ci-deploy.md` § Release Tag Check). Local commits need nothing; before a push, from the repo root:
+Every push of `main` is a tagged release, and each push needs Brandon's yes for that push. The deploy workflow refuses to build a commit that is not tagged (`scripts/check-release-tag.sh`, `docs/architecture/ci-deploy.md` § Release Tag Check). Local commits need nothing.
 
-1. Set the first line of `VERSION.md` to the new version (`1.0.0-beta.N`, or `1.0.0-beta.N.1` for a patch while the next beta is in progress).
-2. Add the row to the Releases table of the active roadmap (`docs/v1.0.0-roadmap.md`) with the version in backticks, what shipped and "Tagged YYYY-MM-DD".
-3. Commit, then tag and push in one command, so the branch never arrives without its tag:
+### Which kind of push
+
+From the repo root, list what changed since the last tag:
 
 ```bash
-bash scripts/check-release-tag.sh   # fails until the tag exists; run after tagging to confirm
+last="$(git describe --tags --abbrev=0)"
+git log --oneline "$last"..HEAD
+git diff --stat "$last"..HEAD -- research pipeline src/pages/research
+```
+
+| Kind | Version | When |
+|---|---|---|
+| Beta release | `1.0.0-beta.N`, the next whole number | The push carries any research change: anything under `research/`, `pipeline/` or `src/pages/research/`, `scripts/scheduled-recheck.sh` or `.github/workflows/recheck.yml` (they run the pipeline), or a change to the claims or verdicts a normal page shows (Responsible AI chatbots, the homepage claim cards). It ships everything on `main`. |
+| Site push | `1.0.0-beta.N.1`, then `.2` | Nothing but site files changed since the last tag: normal pages (copy and layout), writing posts, petitions, styles, site code, docs and tooling. |
+
+Unsure which: it is a beta release. A site page that is ready while `main` holds research or pipeline work waits for that beta, or the beta ships now with everything. The tag check in the deploy (`scripts/check-release-tag.sh`) refuses a four-part version when a research file changed since the tag it follows, and lists those files. Before the push, the agent checks the same thing and names the files that decided it.
+
+### Checks before the push
+
+Site push:
+
+1. `inv check` passes on the commit being pushed.
+2. Each changed page has had a copy review (`copy-review` skill).
+3. The agent lists the commits since the last tag, grouped as site, research pipeline and research content, names the version it will tag, and Brandon says yes to that list.
+
+Beta release: the three above, and:
+
+- Every entry on the `**Next beta (beta.N):**` line of the roadmap's `## Plan` is closed, or Brandon has moved it off the line. An entry whose only open lines are checks that can run only after the push (a first scheduled run, a CI job on the deploy) counts as closed for this check; those lines stay open and close after the live check.
+- Each new or changed published claim has Brandon's sign-off and a copy review.
+- After the deploy, a live check: open each changed page and each new or changed claim on dangerousrobot.org and confirm it shows the change. Record the result in the roadmap.
+
+An agent that is asked to skip a check says so and names the check before doing anything else.
+
+### Steps
+
+1. Set the first line of `VERSION.md` to the new version.
+2. Add the row to the Releases table of the active roadmap (`docs/v1.0.0-roadmap.md`) with the version in backticks, what shipped and "Tagged YYYY-MM-DD" (Pacific date).
+3. Commit, then tag, check and push. One push command carries the branch and the tag, so the branch never arrives without its tag:
+
+```bash
 git tag -a v1.0.0-beta.N -m "v1.0.0-beta.N"
+bash scripts/check-release-tag.sh   # passes once the tag is on HEAD
 git push --atomic origin main v1.0.0-beta.N
 ```
 
-A push without the tag reaches `origin` but the deploy fails at its first build step and the live site keeps the previous release; tag the commit and push the tag, then rerun the deploy from the Actions tab or with `gh workflow run deploy.yml --ref main`.
+The pre-push hook (`scripts/git-hooks/pre-push`) runs the same check on any push to `main` and stops the push when it fails; it also refuses a push of a commit other than HEAD, because the check reads `VERSION.md` from the working tree. Install it once per checkout with `inv install-hooks`, which also links the pre-commit hook when none is installed.
+
+If `main` reaches `origin` without a tag on its newest commit, the deploy fails at its first build step and the live site keeps the previous release. The Monday rebuild fails the same way until it is fixed. To fix it: if `VERSION.md` already names a version with no tag, tag that commit and push the tag; if `VERSION.md` was not bumped (its tag sits on an older commit), bump it, add the Releases row, commit, tag and push. Then rerun the deploy from the Actions tab or with `gh workflow run deploy.yml --ref main`.
+
+## Separate agent credentials (OPS-K)
+
+Operator steps for OPS-K (Separate agent credentials, `docs/v1.0.0-roadmap.md`): agent sessions push with a deploy key that only reaches this repo and call `gh` with a read-only token, so an agent cannot change repo settings or branch protection. Brandon runs every step by hand, in order. Today `origin` is the SSH alias `github-dangerousrobot` (`git remote -v`), which pushes as the `dangerous-robot` owner account, and `gh` holds the owner logins.
+
+Items marked **(check against the GitHub docs)** were not verified from the repo or from `gh --help` (gh 2.72.0).
+
+**1. Deploy key for agent pushes.**
+
+1. Make a key with no passphrase (agents push without a prompt; the key reaches only this repo):
+
+```bash
+ssh-keygen -t ed25519 -C "dangerous-robot/site agent push" -N "" -f ~/.ssh/dr_site_agent_deploy
+```
+
+2. Add `~/.ssh/dr_site_agent_deploy.pub` in the repo's Settings > Deploy keys > Add deploy key, with **Allow write access** ticked. Use the settings page rather than `gh repo deploy-key add --allow-write`: `gh repo deploy-key add --help` says a key added through gh is tied to gh's token and is removed if that token or the GitHub CLI app's access is revoked, while a key added on the settings page depends on no gh login. A deploy key belongs to one repository **(check against the GitHub docs)**.
+3. Add a second alias to `~/.ssh/config`, modeled on the existing `github-dangerousrobot` entry (that entry was not read for this runbook):
+
+```
+Host github-dangerousrobot-agent
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/dr_site_agent_deploy
+  IdentitiesOnly yes
+```
+
+4. Point this checkout's `origin` at it (worktrees share the setting):
+
+```bash
+git -C ~/dev/ai/dangerous-robot/site remote set-url origin github-dangerousrobot-agent:dangerous-robot/site.git
+```
+
+The owner alias `github-dangerousrobot` stays for pushes by hand. An agent can still name it explicitly, so keep its key behind a passphrase that agent sessions do not have cached.
+
+**2. Read-only token for agent `gh` calls.**
+
+1. Signed in as `dangerous-robot`, create a fine-grained personal access token (Settings > Developer settings > Fine-grained tokens): resource owner `dangerous-robot`, **Only select repositories** with `dangerous-robot/site`, expiry 90 days, permissions read-only: Metadata, Contents, Issues, Pull requests, Actions (for `gh run list` and `gh run view`) **(check the permission names against the GitHub docs)**. No Administration permission.
+2. Save it where agents cannot read it, for example `~/dev/secrets/dr-site-agent-gh-token`, mode 600. Put the expiry date in your calendar.
+3. Give agents the token as `GH_TOKEN` in the environment that starts agent sessions (the shell function or script that launches `claude`), for example:
+
+```bash
+GH_TOKEN="$(cat ~/dev/secrets/dr-site-agent-gh-token)" claude
+```
+
+Do not export it in `~/.zshrc`: every `gh` call by hand would then run as the agent.
+
+**Recommended: `GH_TOKEN`, not a second `gh auth login --with-token`.** `gh auth login --help` says to favor `GH_TOKEN` for fine-grained tokens, and `gh help environment` says it takes precedence over stored credentials. The token also belongs to the `dangerous-robot` account, so logging it in with `gh auth login` would put it under the same account name as the owner's full login and likely replace it **(check against the GitHub docs)**.
+
+**3. Owner logins in a separate `gh` profile.**
+
+Move the owner logins (`dangerous-robot`, and `bfaloona`, an admin) out of the default `gh` config, so an agent shell without `GH_TOKEN` is not logged in at all instead of falling back to the owner.
+
+1. Log out of the default profile first: the macOS keychain may hold one entry per account for every profile, and logging out later could delete the owner profile's entry **(check against the GitHub docs)**.
+
+```bash
+gh auth logout --hostname github.com --user dangerous-robot
+gh auth logout --hostname github.com --user bfaloona
+```
+
+2. Log in to the owner profile and give it an alias in `~/.zshrc`:
+
+```bash
+GH_CONFIG_DIR=~/.config/gh-owner gh auth login --hostname github.com --git-protocol ssh
+GH_CONFIG_DIR=~/.config/gh-owner gh auth login --hostname github.com --git-protocol ssh   # second account
+alias gh-owner='GH_CONFIG_DIR=$HOME/.config/gh-owner gh'
+```
+
+3. Switch accounts inside it by hand: `gh-owner auth switch --user dangerous-robot` (or `--user bfaloona`). The commands elsewhere in this runbook that change repo settings (labels, interaction limits) now run as `gh-owner`.
+
+Anything that runs `gh` unattended in your own shell (hooks, scheduled jobs) loses its login at step 1; give it `GH_TOKEN` or `GH_CONFIG_DIR` explicitly. `gh auth:*` is already off the agent allow list (`docs/v1.0.0-roadmap.md:164`), so an agent's `gh auth` call asks you first.
+
+This narrows what an agent does by default. Agents still run as your macOS user, so it is not a hard boundary.
+
+**4. Branch protection on `main`.**
+
+Blocks force pushes and branch deletion, including for admins, and requires no pull request and no status check. A required check would block every release: every release is a direct push of `main` with a tag (CLAUDE.md § Git Conventions), and `ci.yml` runs only on `pull_request` and `workflow_call`, never on a push.
+
+```bash
+gh-owner api -X PUT repos/dangerous-robot/site/branches/main/protection --input - <<'EOF'
+{
+  "required_status_checks": null,
+  "enforce_admins": true,
+  "required_pull_request_reviews": null,
+  "restrictions": null,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
+EOF
+```
+
+The `null` values need `--input`; `-f` sends strings. Field names follow the classic branch protection endpoint **(check against the GitHub docs)**. On the settings page instead: Settings > Branches > add a classic rule for `main`, leave "Require a pull request" and "Require status checks" off, turn on "Do not allow bypassing the above settings", leave "Allow force pushes" and "Allow deletions" off **(check the labels against the GitHub docs)**. Tags are not covered by this rule.
+
+**5. Verify each step.**
+
+| Step | Command | Pass |
+|---|---|---|
+| 1 | `ssh -T github-dangerousrobot-agent` | the greeting names `dangerous-robot/site` (a deploy key's greeting names the repo, **check against the GitHub docs**) |
+| 1 | `git -C ~/dev/ai/dangerous-robot/site push --dry-run origin main` | no permission error; the next agent release push is the full proof |
+| 2 | in an agent session: `gh auth status` | the account is from `GH_TOKEN` |
+| 2 | in an agent session: `gh issue list -R dangerous-robot/site --limit 1` | exit 0 (the read works, so the next check's failure means something) |
+| 2 | in an agent session: `gh api -X PATCH repos/dangerous-robot/site -f description="$(gh repo view dangerous-robot/site --json description --jq .description)"` | fails. Sets the description to its current value, so a success changes nothing but means the token can write: revoke it. GitHub may answer 404 rather than 403 for a write it refuses |
+| 3 | `env -u GH_TOKEN gh auth status` | not logged in |
+| 3 | `gh-owner auth status` | both owner accounts, one active |
+| 4 | `gh-owner api repos/dangerous-robot/site/branches/main/protection --jq '{admins: .enforce_admins.enabled, force: .allow_force_pushes.enabled, delete: .allow_deletions.enabled, prs: .required_pull_request_reviews, checks: .required_status_checks}'` | `admins: true`, `force: false`, `delete: false`, `prs` and `checks` null |
+| 4 | in an agent session: `gh api repos/dangerous-robot/site/branches/main/protection` | fails (the token has no Administration permission; whether a read-only token can read this endpoint, **check against the GitHub docs**) |
+
+Then tick the OPS-K checklist in `docs/v1.0.0-roadmap.md`.
 
 ## Environment variables
 

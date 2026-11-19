@@ -920,20 +920,24 @@ def record_restatement_pick(claim_path: Path, n: int) -> None:
     _edit_sidecar(claim_path, edit)
 
 
-def mark_forced_rewrite(claim_path: Path) -> bool:
+def mark_forced_rewrite(claim_path: Path, *, clear_sign_off: bool = False) -> bool:
     """Check that a forced rewrite may land on the claim on disk; call it before the claim write.
 
-    Only a draft is rewritten in place, and it is left as it is (its
-    sign-off included). A published or archived claim is never rewritten in
-    place: its rerun is a pending draft (``write_pending_recheck``,
+    Only a draft is rewritten in place. With ``clear_sign_off`` its sidecar's
+    ``human_review`` is reset (``verdict_override`` dropped), since the
+    reviewer signed a verdict the rewrite replaces, and the draft is back in
+    the ``dr review`` queue; the ``--rerun`` writers do not pass it, so a
+    rerun keeps the sign-off. A published or archived claim is never
+    rewritten in place: its rerun is a pending draft (``write_pending_recheck``,
     ``write_pending_rerun``) and only ``promote_pending`` replaces it, so one
     raises ``ValueError`` here (the commands refuse it first). A claim whose
     ``status`` is none of the three is refused the same way an unparseable
     claim is: its frontmatter is fixed by hand before a rerun.
 
-    Returns False: nothing is changed. A missing claim is left alone, and so
-    is an unparseable one, which the forced claim write then refuses with its
-    own message.
+    Returns True when it cleared a sign-off, else False. A missing claim is
+    left alone, and so is an unparseable one, which the forced claim write
+    then refuses with its own message. An unparseable sidecar is left too:
+    the sidecar write replaces it with one that carries no sign-off.
     """
     try:
         fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
@@ -941,7 +945,26 @@ def mark_forced_rewrite(claim_path: Path) -> bool:
         return False
     status = fm.get("status", ClaimStatus.DRAFT.value)
     if status == ClaimStatus.DRAFT.value:
-        return False
+        if not clear_sign_off:
+            return False
+        no_sign_off = {"reviewed_at": None, "reviewer": None, "notes": None, "pr_url": None}
+        cleared = False
+
+        def edit(data: dict) -> bool:
+            nonlocal cleared
+            review = data.get("human_review")
+            # A non-dict review is no sign-off: the sidecar write ignores it.
+            if not isinstance(review, dict) or review == no_sign_off:
+                return False
+            data["human_review"] = no_sign_off
+            cleared = True
+            return True
+
+        try:
+            _edit_sidecar(claim_path, edit)
+        except (ValueError, yaml.YAMLError):
+            return False
+        return cleared
     if status in (ClaimStatus.PUBLISHED.value, ClaimStatus.ARCHIVED.value):
         raise ValueError(
             f"{claim_path} is {status}; a rerun of it is written as a pending draft "
@@ -1059,8 +1082,10 @@ def _write_audit_sidecar(
     else:
         audit_block = None
 
-    # Preserve human_review across mid-pipeline reruns. A forced rewrite
-    # resets sign-off through ``mark_forced_rewrite`` before this write.
+    # Preserve human_review across mid-pipeline reruns. A forced full run of
+    # a draft has already reset it (``mark_forced_rewrite``), before the claim
+    # write, so a stop between the two writes cannot pair the old sign-off
+    # with the new verdict.
     human_review = {
         "reviewed_at": None,
         "reviewer": None,
@@ -1263,8 +1288,8 @@ def write_claim_run(
     """Write one claim run to disk, in the one write order; return the claim path.
 
     The order is the same on every path: ``mark_forced_rewrite`` when
-    ``force``, then the subject record when ``create_entity`` and
-    none exists (``write_subject_record``), then the cited source files
+    ``force`` (it clears a draft's sign-off), then the subject record when
+    ``create_entity`` and none exists (``write_subject_record``), then the cited source files
     (``persist_sources``), then the claim, then the full sidecar. A run that
     never reaches the writer leaves no record, no source and no claim.
 
@@ -1312,7 +1337,7 @@ def write_claim_run(
         )
 
     if force:
-        mark_forced_rewrite(claim_path)
+        mark_forced_rewrite(claim_path, clear_sign_off=True)
     if create_entity:
         write_subject_record(spec.entity, repo_root)
     source_ids = persist_sources(result, repo_root, url_index)

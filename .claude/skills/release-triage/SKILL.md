@@ -1,6 +1,6 @@
 ---
 name: release-triage
-description: "Classify a proposed code change against VERSION.md semver rules, decide which release it belongs to (the in-flight line, the next minor, the next major, or Unscheduled), update the roadmap or UNSCHEDULED.md accordingly, and register the active work item so the release gate allows edits. Use before any new feature, schema, or behavior change; when the user starts describing or coding work that is not in the active roadmap; or when the release gate denies an edit. Also use to answer what to work on next (§ Choosing the next item) and to triage the backlog in docs/UNSCHEDULED.md against docs/priorities.md (§ Backlog triage): when a beta or release ships, when the priority order changes, or when asked."
+description: "Classify a proposed code change against VERSION.md semver rules, decide which release it belongs to (the in-flight line, the next minor, the next major, or Unscheduled), update the roadmap or UNSCHEDULED.md accordingly, and register the active work item so the release gate allows edits. Use before any new feature, schema, or behavior change; when the user starts describing or coding work that is not in the active roadmap; or when the release gate denies an edit. Also use to answer what to work on next (§ Choosing the next item) and to triage the backlog in docs/UNSCHEDULED.md against docs/priorities.md (§ Backlog triage): when a beta or release ships, when the priority order changes, or when asked. Also use to report where the release stands (§ Reporting release status): \"what's the status of the release\", \"release status\"."
 ---
 
 # Release triage
@@ -9,7 +9,7 @@ The repo has three mutually exclusive work states (AGENTS.md § Release planning
 
 This skill is the judgment step. Do it in the conversation, with full context, then record the result. Keep it to one short exchange: the goal is "Great, this is a minor feature; I've put it in the next release so it doesn't widen the in-flight beta. Here is the plan outline", not a ceremony.
 
-Steps 1 to 5 handle a change someone asked for or a denied edit; § Choosing the next item and § Backlog triage are the other two uses (flow: AGENTS.md § Priorities).
+Steps 1 to 5 handle a change someone asked for or a denied edit; § Choosing the next item, § Reporting release status and § Backlog triage are the other uses (flow: AGENTS.md § Priorities).
 
 ## Step 1: Read the state (no guessing)
 
@@ -36,7 +36,7 @@ Use the version semantics in `VERSION.md`, quoted here as of 2026-10-06 (re-read
 | `minor` | New entity type, new criterion, new feature shipped | New page, component, `dr` command, Worker endpoint, new content collection field (additive) |
 | `patch` | Content corrections, verdict updates, bug fixes, source additions | Bug fixes, copy, styling fixes, dependency bumps, test-only changes |
 
-Pre-1.0 rule: while the working version is `1.0.0-beta.N`, VERSION.md says content, features and schema may still change within the beta line, and each deploy bumps N. So before 1.0.0, a `major` classification is a signal to **ask**, not an automatic bump to a new line; after 1.0.0 it always targets the next major roadmap.
+Pre-1.0 rule: while the working version is `1.0.0-beta.N`, VERSION.md says content, features and schema may still change within the beta line; a beta release bumps N and a site push adds a fourth number (`docs/runbook.md` § Releasing). So before 1.0.0, a `major` classification is a signal to **ask**, not an automatic bump to a new line; after 1.0.0 it always targets the next major roadmap.
 
 Also classify **size**: `small` (fits in the current beta or patch without a plan file; a roadmap work item or a checklist line is enough) versus `planned` (needs a sub-plan under `docs/plans/`). Anything touching more than a handful of files, or any new feature, is `planned`.
 
@@ -44,8 +44,10 @@ Also classify **size**: `small` (fits in the current beta or patch without a pla
 
 Decision rules, in order:
 
-1. **patch** → the active release line (the roadmap named in `VERSION.md` "Active release:"). Add it as a new work item (next unused letter, topic prefix) under `## Scheduled`, or as a checklist line in an existing item it belongs to. Small patches go straight to registration.
-2. **minor, and the active line is a pre-1.0 beta** → ask one question: "Ride the current beta line (next beta.N) or hold for after 1.0.0?" Default recommendation: ride the beta line if it serves the current focus (`docs/mission-and-voice.md`, `docs/decisions.md`); otherwise hold.
+1. **patch** → the active release line (the roadmap named in `VERSION.md` "Active release:"). Add it as a new work item (next unused letter, topic prefix) under `## Scheduled`, or as a checklist line in an existing item it belongs to. Then put it on one `## Plan` line:
+   - **Site line.** A patch to a normal page (no research change as `docs/runbook.md` § Releasing defines it) goes on `**Site (ships any time):**`. It does not count toward the beta's size and can go out as a site push.
+   - **Beta line.** Any other patch is an entry on `**Next beta (beta.N):**` and takes the size check in § Choosing the next item ("Release size"). A small patch needs no plan file; it still gets the size check.
+2. **minor, and the active line is a pre-1.0 beta** → ask one question: "Ride the next beta (beta.N), wait for a later beta, or go to the backlog?" Default recommendation: the next beta if it serves the current focus (`docs/mission-and-voice.md`, `docs/decisions.md`) and the beta has room; a later beta if it serves the focus and the beta is full; otherwise the backlog.
 3. **minor, post-1.0, and the active line is a patch release** → the next minor roadmap. If `docs/v{next-minor}-roadmap.md` does not exist, create it from the template below.
 4. **major, post-1.0** → the next major roadmap, never the in-flight line. Create `docs/v{next-major}-roadmap.md` if absent. Say explicitly that it is parked there so it does not conflict with the in-flight release.
 5. **Does not serve the current focus** (check `docs/mission-and-voice.md` and `docs/decisions.md`) → Unscheduled. Add it to `docs/UNSCHEDULED.md` with a one-line `Target: vX.Y.Z` note and a triage marker (format in the `UNSCHEDULED.md` header), and **do not register a work item**. Planning (brainstorming, a draft plan) is still allowed because `docs/` is not gated; code is not.
@@ -89,11 +91,13 @@ Do **not** change `VERSION.md` "Active release:" when creating a future roadmap.
 
 ## Step 4: Propose, then confirm (one question)
 
-Write a three-to-five line proposal and ask for a yes/no:
+Work that is not on the roadmap gets one line of pushback first, even when the operator asked for it: "This is unscheduled. It adds to beta.{N} (now {n} open entries, limit 5) or goes to the backlog."
+
+Then write a three-to-five line proposal and ask for a yes/no:
 
 > **Triage:** "{title}" is a **{kind}** ({one-line reason, citing the VERSION.md rule}). The in-flight line is `{active release}` at `{working version}`. I propose scheduling it in **`{target roadmap}`** as {ID} ({name}) {or: as a line in {ID} ({name})} so it {does not widen the beta | does not conflict with the in-flight minor | lands with the patch}. Plan: {small: none needed | planned: draft at docs/plans/drafts/{name}.md via brainstorming → writing-plans}. OK?
 
-If the user already stated the target release in their request, skip the question and state the decision instead.
+If the user already stated the target release in their request, skip the question and state the decision instead. The size limit still applies: a beta that already has 5 open entries needs the operator's explicit OK for one more.
 
 ## Step 5: Record it, then register
 
@@ -118,20 +122,60 @@ Answers "what should I work on next?" with one item, its first step, and what th
 
 **Rank** comes from `docs/priorities.md` ("How to read it").
 
-**Release size.** The beta in progress is the `**Next beta (beta.N):**` line in the active roadmap's `## Plan`. Each entry is a work item, or one checklist line of a larger item, written as "SITE-J (Responsible AI chatbots): published-claim refresh trail". An entry is open until its item is `done`, `absorbed` or `retired`, or its line is ticked. The beta's size is its number of open entries. It has room while the size is under 5, or beyond that when the agent judges it reasonable (small items, or a split that would hurt).
+**Release size.** The beta in progress is the `**Next beta (beta.N):**` line in the active roadmap's `## Plan`. Each entry is a work item, or one checklist line of a larger item, written as "SITE-J (Responsible AI chatbots): published-claim refresh trail". An entry is open until its item is `done`, `absorbed` or `retired`, or its line is ticked. The beta's size is its number of open entries. It has room while the size is under 5. At 5 or more, adding an entry needs the operator's explicit OK or the name of the entry it replaces; write either on the Plan line. This covers patches too, and the agent never decides it alone. Entries on the `**Site (ships any time):**` line do not count.
 
 Stop at the first step that gives an answer:
 
 - **N1. Finish what is started.** `work_item.py status` names an item, or a roadmap item is `in progress`: continue it. The record is shared by every session in the checkout (`UNSCHEDULED.md` "Release gate follow-ups"), so if another session registered the item, do not take it over: ask the operator, or work in a worktree. Uncommitted docs edits alone are not a started item.
-- **N2. Ship a finished beta.** The next-beta line has entries and none is open: the answer is "deploy beta.N" (the operator's call).
+- **N2. Ship what is finished.** The next-beta line has entries and none is open: the answer is "release beta.N" (the operator's call; checks in `docs/runbook.md` § Releasing). A beta with an open entry is not released unless the operator moves that entry off the line. The Site line has finished work and nothing but site files changed since the last tag: say a site push is available.
 - **N3. Pick one.** Candidates are the open entries on the next-beta line and, while the beta has room, open `## Scheduled` items not on it. Skip `decision needed` items and name each decision for the operator. Take the highest-ranked; on a tie, prefer an entry on the line, then `ready` over `plan needed`, then roadmap order. Name for the operator any `propose schedule` backlog item that ranks at or above the winner. No candidate: run § Backlog triage, then ask the operator.
-- **N4. Start it.** The first step is the winner's first unticked checklist line. If that line needs the item's own plan and its Status is `plan needed`, writing the plan is the step (brainstorming, then writing-plans; docs are not gated). If the winner is not on the next-beta line, add it as the entry for that first step; ask the operator first only if that takes the beta past the size guideline. Then register (Step 5), using that line's plan when it has one.
+- **N4. Start it.** The first step is the winner's first unticked checklist line. If that line needs the item's own plan and its Status is `plan needed`, writing the plan is the step (brainstorming, then writing-plans; docs are not gated). If the winner is not on the next-beta line, add it as the entry for that first step; if the beta already has 5 open entries, ask the operator first ("Release size"). Then register (Step 5), using that line's plan when it has one.
 
 Answer in this form:
 
-> **Next:** {ID (name)}, starting with {first step}. **Why:** rank {N} theme "{theme}"; beta.{M} has {n} open entries (guideline 5). **Operator decides:** {each decision named above, or "nothing"}.
+> **Next:** {ID (name)}, starting with {first step}. **Why:** rank {N} theme "{theme}"; beta.{M} has {n} open entries (limit 5). **Operator decides:** {each decision named above, or "nothing"}.
 
 Also say whether § Backlog triage is due; the answer does not wait for it.
+
+## Reporting release status
+
+Answers "what's the status of the release?" in one fixed form. It reads the Step 1 state plus the two commands below, and changes nothing.
+
+```bash
+last="$(git describe --tags --abbrev=0)"
+git log --oneline "$last"..HEAD | wc -l                              # commits not yet live (local refs; no fetch)
+git diff --name-only "$last"..HEAD -- research pipeline src/pages/research scripts/scheduled-recheck.sh .github/workflows/recheck.yml
+```
+
+```text
+## Release status: beta.N (in progress)
+Recap: {Ready to release | Not ready to release}. {d} of {n} items done, {w} waiting on you or the release, {s} not started. Live site is {version on VERSION.md line 1} (tagged {date}); {c} commits since then are local only.
+Beta size: {n} open entries, limit 5.
+
+### Site pages (not beta-labeled): {can ship now as beta.M.1 | waits for beta.N because main holds research or pipeline changes}
+### Research pages and pipeline (beta, ships with beta.N)
+### Tooling (nothing a reader sees)
+- ID (Name): {state}. {One plain sentence: what is committed, or the one step left and who takes it.}
+
+### Research content (claims and drafts)
+- {group}: {count per state}, one line per group
+- Held or waiting: {row} ({blocker or next step}), one line each
+
+Left before beta.N: {each open entry as ID (Name) plus its next step}
+Roadmap lines that look stale: {only when found}
+```
+
+Rules:
+
+- **Which items.** Every item named on the `**Next beta (beta.N):**` and `**Site (ships any time):**` lines of the roadmap's `## Plan`, open or "Done on `main`". The size line counts open entries on the beta line ("Release size" above).
+- **Groups.** Group by what a reader sees, not by ID prefix. A normal page goes under Site. A page under `/research`, pipeline code, or an item that touches both kinds goes under the beta group, listed once. An item with nothing a reader sees (CI, credentials) goes under Tooling. Leave out an empty group.
+- **Site heading.** If the `git diff` above lists any file, or a claim or verdict shown on a normal page changed (`docs/runbook.md` § Releasing, "Which kind of push"), the site group waits for the beta; say which paths decided it. If it lists none, the site group can ship now as a site push.
+- **State.** From the item's `**Status**` line and its unticked checklist lines: `done`, `absorbed` and `retired` read "done"; `in progress` with only an operator step left reads "waiting on you", with only a release or deploy step left reads "waiting on the release"; other `in progress` reads "in progress"; `ready` and `plan needed` read "not started"; `decision needed` reads "needs your decision"; `deferred` is left out. When the Status line and the checklist disagree, use the checklist and report the line as stale.
+- **Order within a group.** Waiting on you, needs your decision, waiting on the release, in progress, not started, done.
+- **Done is not live.** Done means committed. Say "not yet live" until its release is tagged.
+- **Research content.** Always shown, from the § Changes in flight table of `docs/research-content.md`: a count of rows per group (Homepage, Responsible AI page, Elephant, Other) and state, then each held or waiting row by name with its blocker or next step (a roadmap item as ID plus name). Say first when a held row blocks the next beta. Detail stays in that file.
+- **Stale lines.** One line, only when a roadmap line contradicts itself or the repo. Offer the fix; do not make it inside a status answer.
+- **Wording.** Every ID carries its name. Each item is one sentence a reader can follow without the roadmap open; spell out who does the step and whether it costs a paid run.
 
 ## Backlog triage
 

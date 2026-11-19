@@ -1,12 +1,13 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-11T05:56:02.447023+00:00'
-  model: infomaniak:openai/gpt-oss-120b
+  ran_at: '2026-11-08T04:33:21.739105+00:00'
+  model: greenpt:gpt-oss-120b
   agents:
   - researcher
   - ingestor
   - analyst
   - auditor
+  run_id: 49cd4f727fd843d5970489bda97df60b
 models_used:
   researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
   ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
@@ -15,190 +16,811 @@ models_used:
 research:
   mode: decomposed
   tool_outcomes: []
+  rejected:
+  - url: https://www.reddit.com/r/psychology/comments/1lgb5ql/chatgpt_use_linked_to_cognitive_decline_mit
+    title: 'ChatGPT use linked to cognitive decline: MIT research'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.researchgate.net/publication/389767364_Effects_of_generative_artificial_intelligence_on_cognitive_effort_and_task_performance_study_protocol_for_a_randomized_controlled_experiment_among_college_students
+    title: https://www.researchgate.net/publication/389767364_Effects_of_generative_artificial_intelligence_on_cognitive_effort_and_task_performance_study_protocol_for_a_randomized_controlled_experiment_among_college_students
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.facebook.com/groups/1404116417142065/posts/2135822760638090
+    title: Another post on the cognitive effects of gen-AI
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.quora.com/Is-there-scientific-evidence-that-frequent-use-of-generative-AI-tools-influences-human-intelligence-positively-or-negatively-What-does-current-research-say-about-cognitive-offloading-critical-thinking-and-long-term
+    title: Is there scientific evidence that frequent use of generative ...
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://er.educause.edu/articles/2025/12/the-paradox-of-ai-assistance-better-results-worse-thinking
+    title: 'The Paradox of AI Assistance: Better Results, Worse Thinking'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://core.ac.uk/download/599100665.pdf
+    title: https://core.ac.uk/download/599100665.pdf
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cognitiveprivacyproject.org/ai-tutors-cognitive-harm-liability
+    title: AI Tutors, Cognitive Harm, & Institutional Liability
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.healthcareitnews.com/news/new-ai-risks-cognitive-spoofing-and-fake-expertise
+    title: 'New AI risks: ''Cognitive spoofing'' and fake expertise'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.mcpdigitalhealth.org/article/S29497612(24)00126-3/fulltext
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://experlogix.com/the-risks-and-rewards-of-ai-document-management
+    title: The Risks and Rewards of AI Document Management
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.youtube.com/watch?v=q9PaRquqfeE
+    title: Artificial Intelligence as a Tool to Identify Cognitive Decline, Finds
+      study
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.businessinsider.com/ways-to-prevent-alzheimers-reduce-cognitive-decline-2017-2
+    title: Ways to Prevent Alzheimer's, Reduce Cognitive Decline - Business Insider
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://retractionwatch.com/2026/06/16/technology-mind-behavior-apa-journal-investigation-cognitive-impact-generative-ai
+    title: Journal investigating paper on cognitive impact of generative AI – Retraction
+      Watch
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://retractionwatch.com/2026/09/14/american-psychological-association-technology-mind-behavior-sarah-baldeo-id-quotient
+    title: CEO of AI company loses paper on cognitive impact of generative AI – Retraction
+      Watch
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.facebook.com/groups/1048019523623103/posts/1629633102128406
+    title: How does generative AI impact learning and memory?
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.facebook.com/groups/1404116417142065/posts/2087574408796259
+    title: Retracted study on generative AI sparks concern
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.socialscienceregistry.org/trials/15361
+    title: 'Generative AI and Cognitive Bias: Online Experiment ...'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.linkedin.com/posts/retractionwatch_journal-investigating-paper-on-cognitive-activity-7472763295167479808-CSQY
+    title: Generative AI Study Under Scrutiny Over Research Ethics
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://psycnet.apa.org/record/2027-53135-001
+    title: Behavioral evidence of cognitive offload in high-use adults.
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.sciencedirect.com/science/article/pii/S2405844024079969
+    title: The memory systems of the human brain and generative ...
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://medium.com/data-science-collective/a-47-collapse-in-brain-activity-9cdf352f349e
+    title: A 47% Collapse in Brain Activity
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.time.com/7295195/ai-chatgpt-google-learning-school
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.nature.com/articles/s41746-023-00979-5
+    title: Systematic review and meta-analysis of AI-based conversational agents for
+      promoting mental health and well-being | npj Digital Medicine
+    score: null
+    reason: scored below 3 on every sub-question
   queries:
-  - generative AI cognitive decline studies
-  - large language models cognitive load research
-  - AI assistants reducing memory retention evidence
-  - Generative AI critical thinking impairment papers
-  - neuroscientist warnings generative AI cognitive harm
-  - academic literature generative AI cognitive risks
-  - generative AI affects problem-solving abilities studies
-  planner_rationale: The sub-questions collectively cover empirical evidence (sq1,
-    sq2, sq3), qualitative reports (sq3), and expert opinions (sq4) to assess whether
-    generative AI usage can harm cognitive abilities, aligning with the claim.
-  candidates_seen: 83
-  urls_kept: 35
-  urls_dropped: 43
-  scorer_rationale: "Scoring decisions were based on the relevance of each candidate's\
-    \ title and snippet to the sub-questions (sq1-sq4) while adhering to publisher\
-    \ quality and avoiding results about machine learning.  \n\n- **Kept entries**\
-    \ were included if their scores for **at least one sub-question were >= 3**, with\
-    \ `addresses` reflecting the specific sub-questions they scored high on. For example:\n\
-    \  - **Microsoft Research** ([url](https://www.microsoft.com/en-us/research/publication/the-impact-of-generative-ai-on-critical-thinking-self-reported-reductions-in-cognitive-effort-and-confidence-effects-from-a-survey-of-knowledge-workers/))\
-    \ scored **5 for sq1, sq2, sq3, and sq4** due to its empirical study and expert\
-    \ opinion on generative AI's cognitive impact. \n  - Links like **Polytechnique\
-    \ Insights** ([url](https://www.polytechnique-insights.com/en/columns/neuroscience/generative-ai-the-risk-of-cognitive-atrophy/))\
-    \ were scored **5 for sq4** (expert analysis) and **4s for sq1, sq2, sq3** due\
-    \ to healthcare/education crossover. Primary sources (Microsoft) and secondary\
-    \ opinions (academic, news, expert analyses) were prioritized.\n  - **ArXiv studies**\
-    \ (e.g., sq1, sq4) and TUM reports (sq3, sq5) were also included due to structured\
-    \ methodology.\n\n- **Dropped entries** scored **< 3 for every sub-question**,\
-    \ no matter the topic. Examples include: \n  - **Forum/Reddit links**: ‘Score\
-    \ <= 2 due to lack of depth (e.g., [Reddit/Futurology](https://www.reddit.com/r/Futurology/comments/1ipy16j/microsoft_study_finds_ai_makes_human_cognition/)).\
-    \ \n  - **Unfocused/irrelevant content** (e.g., AI safety dialogues like [arXiv/2510.16223](http://arxiv.org/abs/2510.16223),\
-    \ LinkedIn memes) omitted.\n  \n\n**Final Rule Application**: Candidates mentioning\
-    \ *machine learning* (e.g., certain arXiv entries) were automatically **disqualified\
-    \ under “Avoid rules” and scored 1 for all sub-questions**. The most consequential\
-    \ decisions followed:\n  1. **Studies with empirical results** (e.g., MIT, TUM\
-    \ EEG, Microsoft’s survey) were **kept** for empirical/ethical value.\n  2. **Expert\
-    \ opinion** (Guardian, Harvard) were **kept** for sq4 contextual analysis.\n \
-    \ 3. **Meta-analysis** (arXiv, conferences) were scored if structurally aligned\
-    \ with sub-questions; otherwise **dropped** (e.g., 2509.19517)."
-  urls_after_blocklist: 32
+  - studies cognitive decline generative AI users
+  - longitudinal research generative AI cognitive effects
+  - meta-analysis generative AI cognitive harm reviews
+  - study generative AI improves memory problem-solving
+  - doctored documentation generative AI cognitive risks
+  - generative AI warnings cognitive decline WHO
+  - generative AI retraction cognitive studies
+  planner_rationale: The sub-questions cover the main axes of the claim by addressing
+    empirical research, longitudinal trends, aggregated reviews, counter-evidence,
+    and official warnings, while ensuring a comprehensive audit of both supportive
+    and conflicting evidence.
+  candidates_seen: 45
+  urls_kept: 16
+  urls_dropped: 23
+  scorer_rationale: 'The scoring was conducted per sub-question for each candidate
+    based on its title and snippet alone. Key observations:
+
+
+    1. Sub-questions **sq1 (measurable declines)** and **sq5 (warnings/risk statements)**
+    had the highest alignment across candidates, with **Polytécnique Insights (5)**,
+    **SCALE Initiative (5)**, **arXiv:2502.12447 (5)**, **The Algorithmic Bridge (5)**,
+    and **MIT Media Lab (5)** providing strongest empirical or evaluative evidence.
+    These candidates described studies with measurable harm (e.g., brain activity
+    collapse, reliance on AI for essays) while also explicitly warning of risks.
+
+
+    2. **Sq3 (authoritative reviews/meta-analyses)** and **sq2 (longitudinal tracking)**
+    received significantly lower coverage among most candidates. Only **ScienceDirect
+    review (5)** and **arXiv:2502.12447 (5)** synthesized research, while longitudinal
+    discussion was sparse, with **arXiv:2502.12447** and the **Microsoft critical
+    thinking survey (5)** addressing gaps in longitudinal tracking.
+
+
+    3. **Sq4 (evidence of cognitive improvements)** was selectively covered, with
+    **PMC12255134 (4)** and **arXiv:2502.12447 (5)** acknowledging positive effects
+    only in specific use scenarios (e.g., guided AI support for learning). Candidates
+    like **The Conversation (4)** also examined trade-offs.
+
+
+    Demoted/removed candidates failed to meet the ≥3 threshold on any sub-question
+    (e.g., Reddit/Quora forum posts, healthcare-specific articles, retracted or proposed
+    studies). High-quality and high-scoring candidates like **MIT Media Lab** and
+    **The Algorithmic Bridge** are authoritative sources for warnings and specific
+    case studies (sq5), often scoring 5 across multiple questions due to well-documented
+    empirical bases in their studies.'
+  urls_after_blocklist: 16
 sub_questions:
 - id: sq1
-  question: What evidence exists linking generative AI usage to cognitive decline
-    or reduced cognitive abilities?
-  rationale: This sub-question targets empirical evidence or studies that directly
-    examine the relationship between generative AI use and cognitive harm.
+  question: What studies report a measurable decline in cognitive skills (e.g., memory,
+    critical thinking, problem-solving) in generative AI users compared to non-users?
+  rationale: This addresses the core claim by seeking empirical evidence linking generative
+    AI use to measurable cognitive harms.
+  kind: coverage
   queries:
-  - generative AI cognitive decline studies
-  - large language models cognitive load research
+  - studies cognitive decline generative AI users
   citations:
-  - 2025/pmc12255134
   - 2025/generative-ai-the-risk-of-cognitive-atrophy
-  - 2025/the-impact-of-generative-ai-on-critical-thinking-self-reported-reductions-in-cognitive-effort-and-confidence-effects-from-a-survey-of-knowledge-workers
-  - 2026/ai-chatgpt-google-learning-school
-  - 2025/ai-memory
-  - 2026/cd6xz12j6pzo
   - 2025/250212447v1
-- id: sq2
-  question: Do academic studies or research papers identify generative AI as a risk
-    factor for cognitive load or mental fatigue?
-  rationale: This sub-question focuses on whether generative AI is empirically linked
-    to cognitive load or fatigue, which could indirectly harm cognitive abilities.
-  queries:
-  - academic literature generative AI cognitive risks
-  - generative AI affects problem-solving abilities studies
-  citations:
   - 2025/pmc12255134
-  - 2025/generative-ai-the-risk-of-cognitive-atrophy
-  - 2025/the-impact-of-generative-ai-on-critical-thinking-self-reported-reductions-in-cognitive-effort-and-confidence-effects-from-a-survey-of-knowledge-workers
-- id: sq3
-  question: Are there documented cases or anecdotal reports of generative AI altering
-    memory retention or critical thinking skills?
-  rationale: This sub-question explores qualitative or anecdotal evidence of generative
-    AI's impact on specific cognitive functions like memory or critical thinking.
-  queries:
-  - AI assistants reducing memory retention evidence
-  - Generative AI critical thinking impairment papers
-  citations:
-  - 2025/generative-ai-the-risk-of-cognitive-atrophy
-  - 2025/the-impact-of-generative-ai-on-critical-thinking-self-reported-reductions-in-cognitive-effort-and-confidence-effects-from-a-survey-of-knowledge-workers
-  - 2026/ai-chatgpt-google-learning-school
   - 2025/ai-memory
   - 2025/pmc12036037
+  - 2025/lee2025aicriticalthinkingsurveypdf
+  - 2026/what-the-studies-say-about-how-ai
+  - 2026/s2451958826001764
+  - 2026/is-ai-hurting-your-ability-to-think-how-to-reclaim-your-brain-272834
+  - 2026/chatgpt-produces-more-lazy-thinkers-evidence-cognitive-engagement-decline
+  - 2025/your-brain-on-chatgpt
+  - 2026/20260417-ai-chatbots-could-be-making-you-stupider
+  - 2026/978-981-95-6946-528
+  snippet_only: []
+- id: sq2
+  question: Do longitudinal studies track cognitive changes in individuals using generative
+    AI regularly over time?
+  rationale: Longitudinal data can reveal trends or declines in cognitive abilities
+    tied specifically to prolonged use of generative AI.
+  kind: coverage
+  queries:
+  - longitudinal research generative AI cognitive effects
+  citations:
+  - 2025/lee2025aicriticalthinkingsurveypdf
+  snippet_only:
+  - 2025/250212447v1
+- id: sq3
+  question: Are there authoritative reviews or meta-analyses synthesizing research
+    on generative AI and cognitive harm?
+  rationale: Aggregated summaries from reputable sources can provide a high-level
+    assessment of the evidence base.
+  kind: coverage
+  queries:
+  - meta-analysis generative AI cognitive harm reviews
+  citations:
+  - 2026/what-the-studies-say-about-how-ai
+  - 2026/s2451958826001764
+  snippet_only:
   - 2025/250212447v1
 - id: sq4
-  question: What guidelines or warnings from cognitive science experts exist regarding
-    generative AI's potential to harm or impair cognitive function?
-  rationale: This sub-question seeks expert opinions or methodological recommendations
-    about cognitive risks associated with generative AI.
+  question: What evidence suggests generative AI use improves or maintains cognitive
+    skills?
+  rationale: Counter-evidence to the claim may show neutral or beneficial effects
+    on cognitive abilities.
+  kind: counter-evidence
   queries:
-  - neuroscientist warnings generative AI cognitive harm
+  - study generative AI improves memory problem-solving
+  - generative AI retraction cognitive studies
+  citations:
+  - 2025/250212447v1
+  - 2025/pmc12255134
+  - 2025/lee2025aicriticalthinkingsurveypdf
+  - 2026/what-the-studies-say-about-how-ai
+  - 2026/is-ai-hurting-your-ability-to-think-how-to-reclaim-your-brain-272834
+  - 2026/978-981-95-6946-528
+  snippet_only:
+  - 2025/pmc12036037
+- id: sq5
+  question: What are the stated warnings or risks about cognitive effects in generative
+    AI user studies, developer documentation, or public health advisories?
+  rationale: First-party or official warnings can indicate acknowledged risks or concerns
+    about cognitive harm.
+  kind: coverage
+  queries:
+  - doctored documentation generative AI cognitive risks
+  - generative AI warnings cognitive decline WHO
   citations:
   - 2025/generative-ai-the-risk-of-cognitive-atrophy
-  - 2025/the-impact-of-generative-ai-on-critical-thinking-self-reported-reductions-in-cognitive-effort-and-confidence-effects-from-a-survey-of-knowledge-workers
-  - 2025/pmc12036037
-  - 2025/250212447v1
+  - 2026/what-the-studies-say-about-how-ai
+  - 2026/s2451958826001764
+  - 2026/is-ai-hurting-your-ability-to-think-how-to-reclaim-your-brain-272834
+  - 2026/chatgpt-produces-more-lazy-thinkers-evidence-cognitive-engagement-decline
+  - 2026/20260417-ai-chatbots-could-be-making-you-stupider
+  snippet_only:
+  - 2025/ai-memory
+  - 2025/your-brain-on-chatgpt
 sources_consulted:
-- id: 2025/pmc12255134
-  url: https://pmc.ncbi.nlm.nih.gov/articles/PMC12255134/
-  title: 'Effects of generative artificial intelligence on cognitive effort and task
-    performance: study protocol for a randomized controlled experiment among college
-    students'
-  ingested: true
-  acquisition:
-    stage: research
-    origin: tavily
-    query: generative AI cognitive decline studies
 - id: 2025/generative-ai-the-risk-of-cognitive-atrophy
-  url: https://www.polytechnique-insights.com/en/columns/neuroscience/generative-ai-the-risk-of-cognitive-atrophy/
+  url: https://www.polytechnique-insights.com/en/columns/neuroscience/generative-ai-the-risk-of-cognitive-atrophy
   title: 'Generative AI: the risk of cognitive atrophy'
   ingested: true
+  quotes:
+  - text: Less than three years after the launch of Chat‑GPT, 42% of young French
+      people already use generative AI on a daily basis.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Using ChatGPT to write an essay reduces the cognitive engagement and intellectual
+      effort required to transform information into knowledge, according to a study.
+    found: true
+    checked_against: page
+    passage: than three years after the launch of ChatGPT, 42% of young French people
+      already use generative AI on a daily basis. * Using ChatGPT to write an essay
+      reduces the cognitive engagement and intellectual effort required to transform
+      information into knowledge, according to a study. * The study also showed that
+      83% of AI users were unable to remember a passage they had just written for
+      an essay. *
+  - text: I don’t think it’s an exaggeration to say that they are driving intellectual,
+      emotional and moral mediocrity on a global scale.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: More specifically, participants assisted by ChatGPT wrote 60% faster, but
+      their relevant cognitive load fell by 32%.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: It seems to me that the future lies in neuro‑symbolic AI.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  recheck:
+    refetched: true
+    checked_at: '2026-11-07'
+    archive: ok
+    reason: null
   acquisition:
     stage: research
     origin: tavily
-    query: generative AI cognitive decline studies
-- id: 2025/the-impact-of-generative-ai-on-critical-thinking-self-reported-reductions-in-cognitive-effort-and-confidence-effects-from-a-survey-of-knowledge-workers
-  url: https://www.microsoft.com/en-us/research/publication/the-impact-of-generative-ai-on-critical-thinking-self-reported-reductions-in-cognitive-effort-and-confidence-effects-from-a-survey-of-knowledge-workers/
-  title: 'The Impact of Generative AI on Critical Thinking: Self-Reported Reductions
-    in Cognitive Effort and Confidence Effects From a Survey of Knowledge Workers'
-  ingested: true
-  acquisition:
-    stage: research
-    origin: tavily
-    query: generative AI cognitive decline studies
-- id: 2026/ai-chatgpt-google-learning-school
-  url: https://time.com/7295195/ai-chatgpt-google-learning-school/
-  title: ChatGPT May Be Eroding Critical Thinking Skills, According to a New MIT Study
-  ingested: true
-  acquisition:
-    stage: research
-    origin: tavily
-    query: generative AI cognitive decline studies
-- id: 2025/ai-memory
-  url: https://policyoptions.irpp.org/2025/09/ai-memory/
-  title: 'Generative AI and deeper thinking: What’s in our heads still matters'
-  ingested: true
-  acquisition:
-    stage: research
-    origin: tavily
-    query: AI assistants reducing memory retention evidence
-- id: 2025/pmc12036037
-  url: https://pmc.ncbi.nlm.nih.gov/articles/PMC12036037/
-  title: 'The cognitive paradox of AI in education: between enhancement and erosion'
-  ingested: true
-  acquisition:
-    stage: research
-    origin: tavily
-    query: Generative AI critical thinking impairment papers
-- id: 2026/cd6xz12j6pzo
-  url: https://www.bbc.com/news/articles/cd6xz12j6pzo
-  title: Are AI Prompts Damaging Your Thinking Skills?
-  ingested: true
-  acquisition:
-    stage: research
-    origin: tavily
-    query: neuroscientist warnings generative AI cognitive harm
+    query: studies cognitive decline generative AI users
 - id: 2025/250212447v1
   url: https://arxiv.org/html/2502.12447v1
   title: Protecting Human Cognition in the Age of AI
   ingested: true
+  quotes:
+  - text: GenAI has the potential to fundamentally alter the way we think.
+    found: true
+    checked_against: page
+    passage: is now possible to synthesize vast amounts of information on the web
+      into coherent, structured and accessible outputs. Consequently, GenAI has the
+      potential to fundamentally alter the way we think. On one hand, emerging evidence
+      highlights notable benefits of GenAI, such as increased productivity across
+      various
+  - text: Although GenAI accelerates access to factual and procedural knowledge, it
+      may bypass essential cognitive processes.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Overreliance on GenAI can reduce cognitive difficulty and impede deeper
+      metacognitive processes.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: The mere knowledge of advice being generated by an AI can cause people to
+      over-rely on it.
+    found: true
+    checked_against: page
+    passage: to over-rely on AI-generated advice, even when it contradicts their own
+      reasoning or available contextual information. Alarmingly, the mere knowledge
+      of advice being generated by an AI can cause people to over-rely on it. AI-generated
+      explanations, particularly those that are deceptive, have also been shown to
+      significantly influence
+  - text: Widespread use of GenAI can lead to a decline in human creativity, as people
+      reduce exercising their own creative abilities.
+    found: true
+    checked_against: page
+    passage: 'work ([65](#bib.bib65)) views creativity not as merely a cognitive process
+      or hidden information, but as a skill. It argues that widespread use of GenAI
+      can lead to a decline in human creativity, as people reduce exercising their
+      own creative abilities. ### Metacognition and Critical Thinking Metacognition
+      refers to the awareness and regulation of thinking'
+  recheck:
+    refetched: true
+    checked_at: '2026-11-07'
+    archive: ok
+    reason: null
   acquisition:
-    stage: ingest
+    stage: research
     origin: tavily
-    query: generative AI cognitive decline studies
-    recovered_via: archive_org
-    outcome: recovered
+    query: longitudinal research generative AI cognitive effects
+- id: 2025/pmc12255134
+  url: https://pmc.ncbi.nlm.nih.gov/articles/PMC12255134
+  title: 'Effects of generative artificial intelligence on cognitive effort and task
+    performance: study protocol for a randomized controlled experiment among college
+    students'
+  ingested: true
+  quotes:
+  - text: The advancement of generative artificial intelligence (AI) has shown great
+      potential to enhance productivity in many cognitive tasks.
+    found: true
+    checked_against: page
+    passage: '· 26:244 · DOI: 10.1186/s13063-025-08950-3 · PMID: 40646586 · PMCID:
+      PMC12255134 ## Abstract ### Background The advancement of generative artificial
+      intelligence (AI) has shown great potential to enhance productivity in many
+      cognitive tasks. However, concerns are raised that the use of generative AI
+      may erode human cognition due to over-reliance. Conversely,'
+  - text: We will examine the effect of using generative AI on cognitive effort, a
+      major aspect of human cognition that reflects the extent of mental resources
+      an individual allocates during the cognitive process.
+    found: true
+    checked_against: page
+    passage: 'we study how college students use a generative AI tool to support their
+      analytical writing in an educational context. We will examine the effect of
+      using generative AI on cognitive effort, a major aspect of human cognition that
+      reflects the extent of mental resources an individual allocates during the cognitive
+      process. We will also examine the effect on writing performance achieved through
+      the human-generative AI collaboration. ###'
+  - text: We will recruit 160 participants (aged 18–35 years) from a German university
+      where the research will be conducted.
+    found: true
+    checked_against: page
+    passage: 'responses. A survey will measure individuals'' perceptions of the writing
+      task and their attitudes on generative AI. We will recruit 160 participants
+      (aged 18-35 years) from a German university where the research will be conducted.
+      ### Discussion This trial aims to establish the causal effects of generative
+      AI on cognitive effort and task'
+  - text: This trial aims to establish the causal effects of generative AI on cognitive
+      effort and task performance through a randomized controlled experiment.
+    found: true
+    checked_against: page
+    passage: '160 participants (aged 18-35 years) from a German university where the
+      research will be conducted. ### Discussion This trial aims to establish the
+      causal effects of generative AI on cognitive effort and task performance through
+      a randomized controlled experiment. The findings aim to offer insights for policymakers
+      in regulating generative AI and inform the responsible design and'
+  recheck:
+    refetched: true
+    checked_at: '2026-11-07'
+    archive: ok
+    reason: null
+  shared_with:
+  - 2025/pmc12036037
+  acquisition:
+    stage: research
+    origin: tavily
+    query: studies cognitive decline generative AI users
+- id: 2025/ai-memory
+  url: https://policyoptions.irpp.org/2025/09/ai-memory
+  title: 'Generative AI and deeper thinking: What’s in our heads still matters'
+  ingested: true
+  quotes:
+  - text: As AI-powered tools become more capable, our brains may be bowing out of
+      the hard mental lift.
+    found: true
+    checked_against: page
+    passage: 'released earlier this year, American cognitive psychologist [Barbara
+      Oakley](https://www.coursera.org/instructor/barboakley) and a team of neuroscience
+      researchers exposed the critical but peculiar irony of the digital era: as AI-powered
+      tools become more capable, our brains may be bowing out of the hard mental lift.
+      This erodes the very memory skills we should be exercising. We are left less
+      capable of using our heads. ## Collective'
+  - text: The most advanced AI can simulate intelligence, but it cannot think for
+      you. That task remains, stubbornly and magnificently, human.
+    found: true
+    checked_against: page
+    passage: 'obsolete. They are essential mental activities. Access to instant information
+      can and does foster lazy habits of mind. British education researcher [Carl
+      Hendrick](https://htalh.com/partner/prof-dr-carl-hendrick/) put it [this way](https://carlhendrick.substack.com/p/the-most-important-memory-is-still):
+      "The most advanced AI can simulate intelligence, but it cannot think for you.
+      That task remains, stubbornly and magnificently, human." The most important
+      form of memory is still the one inside our heads. \**Composed in a fierce dialectical
+      encounter'
+  recheck:
+    refetched: true
+    checked_at: '2026-11-07'
+    archive: ok
+    reason: null
+  acquisition:
+    stage: research
+    origin: tavily
+    query: study generative AI improves memory problem-solving
+- id: 2025/pmc12036037
+  url: https://pmc.ncbi.nlm.nih.gov/articles/PMC12036037
+  title: 'The cognitive paradox of AI in education: between enhancement and erosion'
+  ingested: true
+  quotes:
+  - text: Artificial intelligence (AI) is rapidly transforming learning through unparalleled
+      levels of personalization, efficiency, and scalability (Govea et al., [2023];
+      Mahmoud and Sørensen, [2024]).
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Cognitive offloading refers to the utilization of external aids to achieve
+      cognitive tasks (Risko and Gilbert, [2016]).
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: According to Cognitive Load Theory, AI must decrease cognitive overload
+      but sustain active cognitive engagement.
+    found: true
+    checked_against: page
+    passage: designed as an enabler, rather than a substitute, fostering intellectual
+      autonomy, problem-solving, and deep learning. According to Cognitive Load Theory,
+      AI must decrease cognitive overload but sustain active cognitive engagement.
+      According to Bloom's Taxonomy, AI must aid higher-order thinking and not enhance
+      recall alone. Additionally, according
+  - text: AI should complement and not replace human instruction, with students doing
+      higher-order thinking as the efficiency and personalization strengths of AI
+      are leveraged.
+    found: true
+    checked_against: page
+    passage: Additionally, according to Self-Determination Theory, AI must generate
+      autonomy and competence and not dependency. AI should complement and not replace
+      human instruction, with students doing higher-order thinking as the efficiency
+      and personalization strengths of AI are leveraged. This calls on teachers to
+      implement AI in a way that enhances self-directed learning and metacognitive
+      thinking. AI
+  recheck:
+    refetched: true
+    checked_at: '2026-11-07'
+    archive: ok
+    reason: null
+  shared_with:
+  - 2025/pmc12255134
+  acquisition:
+    stage: research
+    origin: tavily
+    query: study generative AI improves memory problem-solving
+- id: 2025/lee2025aicriticalthinkingsurveypdf
+  url: https://www.microsoft.com/en-us/research/wp-content/uploads/2025/01/lee_2025_ai_critical_thinking_survey.pdf
+  title: 'The Impact of Generative AI on Critical Thinking: Self-Reported Reductions
+    in Cognitive Effort '
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"Higher confidence in GenAI tool ability is associated with less critical
+      thinking while higher self-confidence is associated with more critical thinking."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: GenAI shifts the nature of critical thinking toward information verification,
+      response integration, and task stewardship.
+    found: true
+    checked_against: page
+    passage: GenAI is associated with less critical thinking, while higher self-confidence
+      is associated with more critical thinking. Qualitatively, GenAI shifts the nature
+      of critical thinking toward information verification, response integration,
+      and task stewardship. Our insights reveal new design challenges and opportunities
+      for developing GenAI tools for knowledge work. CCS Concepts
+  - text: '"Workers who use GenAI report reduced effort in information gathering but
+      increased effort in verification and response integration."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: longitudinal research generative AI cognitive effects
+- id: 2026/what-the-studies-say-about-how-ai
+  url: https://www.thealgorithmicbridge.com/p/what-the-studies-say-about-how-ai
+  title: How AI Affects Your Brain According to the Studies
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Timing might be important
+    found: true
+    checked_against: page
+    passage: of "cognitive debt." The brain-only people who used ChatGPT in session
+      4 showed *increased* brain connectivity. As Kosmyna said, "timing might be important."
+      * ***[Lower engagement of cognitive control, attention, modulation networks
+      and lower creativity in children while
+  - text: Participants followed incorrect AI answers ~80% of the time, performing
+      worse than having no AI at all — Shaw & Nave (2026).
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"The brain-only people who used ChatGPT in session 4 showed increased brain
+      connectivity__ — Kosmyna et al. (2025).'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Production improved, the learner didn’t." — Fan et al. (2025) on metacognitive
+      laziness.'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: No one has compiled these studies in one easily-readable and easily-accessible
+      place.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: meta-analysis generative AI cognitive harm reviews
+- id: 2026/s2451958826001764
+  url: https://www.sciencedirect.com/science/article/pii/S2451958826001764
+  title: 'AI-overdependence and human cognitive decline: Hazards, evidence, and mitigation
+    strategies'
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org capture redirects to https://www.sciencedirect.com/unsupported_browser;
+      Wayback save failed (HTTP 520)
+  quotes:
+  - text: The rapid diffusion of artificial intelligence (AI) dialogue systems...
+      raises growing concerns about overreliance, overdependence, and cognitive decline.
+    found: true
+    checked_against: page
+    passage: '* [Metrics](https://www.sciencedirect.com/science/article/pii/S2451958826001764#metrics)
+      ## Abstract The rapid diffusion of artificial intelligence (AI) dialogue systems
+      and generative models across education, professional work, and healthcare brings
+      substantial productivity gains but also raises growing concerns about overreliance,
+      overdependence, and cognitive decline. Despite increasing scholarly attention,
+      existing research remains fragmented across domains and disciplines, with no'
+  - text: '"This fragmentation limits cumulative understanding of shared mechanisms,
+      broader hazards, and effective responses."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"The taxonomy encapsulates key themes... Psychological and Contextual Mechanisms,
+      Population-Specific Effects, Broader Hazards and Impacts."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: studies cognitive decline generative AI users
+- id: 2026/is-ai-hurting-your-ability-to-think-how-to-reclaim-your-brain-272834
+  url: https://theconversation.com/is-ai-hurting-your-ability-to-think-how-to-reclaim-your-brain-272834
+  title: Is AI Hurting Your Ability to Think? How to Reclaim Your Brain
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: AI is replacing tasks many people have grown reluctant to do themselves
+      – thinking, writing, creating, analysing. But when we don’t use these skills,
+      they can decline.
+    found: true
+    checked_against: page
+    passage: refer to as "cognitive atrophy". Essentially, [AI is replacing](https://link.springer.com/article/10.1007/s00146-023-01856-1)
+      tasks many people have grown reluctant to do themselves - thinking, writing,
+      creating, analysing. But when we don't use these skills, they can decline. We
+      also risk getting things very, very wrong. Generative AI works by predicting
+      likely words from [patterns trained on
+  - text: If your first instinct for every task is to ask an AI tool to give you a
+      starting point, you are skipping the most vital part of thinking.
+    found: true
+    checked_against: page
+    passage: 'reflex: asking for and accepting solutions, rather than trying to tease
+      out your own ideas and solve problems. If your first instinct for every task
+      is to ask an AI tool to give you a starting point, you are skipping the most
+      vital part of thinking. This is the heavy lifting of structure, logic and sparking
+      new ideas which [excite'
+  - text: Treat AI as a deeply unreliable colleague... Task yourself with finding
+      three specific errors with AI’s output, or to break its logic.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Do the initial cognitive work... use AI to refine your thoughts, not replace
+      them.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: generative AI warnings cognitive decline WHO
+- id: 2026/chatgpt-produces-more-lazy-thinkers-evidence-cognitive-engagement-decline
+  url: https://scale.stanford.edu/ai/repository/chatgpt-produces-more-lazy-thinkers-evidence-cognitive-engagement-decline
+  title: 'ChatGPT Produces More “Lazy” Thinkers: Evidence of Cognitive Engagement
+    Decline'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: The results revealed significantly lower cognitive engagement scores in
+      the ChatGPT group compared to the control group.
+    found: true
+    checked_against: page
+    passage: scale (CES), the CES-AI, developed to assess mental effort, attention,
+      deep processing, and strategic thinking. The results revealed significantly
+      lower cognitive engagement scores in the ChatGPT group compared to the control
+      group. These findings suggest that AI assistance may lead to cognitive offloading.
+      The study contributes to the growing body
+  - text: These findings suggest that AI assistance may lead to cognitive offloading.
+    found: true
+    checked_against: page
+    passage: The results revealed significantly lower cognitive engagement scores
+      in the ChatGPT group compared to the control group. These findings suggest that
+      AI assistance may lead to cognitive offloading. The study contributes to the
+      growing body of literature on the psychological implications of AI in education
+      and raises
+  acquisition:
+    stage: research
+    origin: tavily
+    query: studies cognitive decline generative AI users
+- id: 2025/your-brain-on-chatgpt
+  url: https://www.media.mit.edu/publications/your-brain-on-chatgpt
+  title: 'Your Brain on ChatGPT: Cognitive Debt from AI-Assisted Essay Writing'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: While LLMs offer immediate convenience, our findings highlight potential
+      cognitive costs.
+    found: true
+    checked_against: page
+    passage: in the LLM group and the highest in the Brain-only group. LLM users also
+      struggled to accurately quote their own work. While LLMs offer immediate convenience,
+      our findings highlight potential cognitive costs. Over four months, LLM users
+      consistently underperformed at neural, linguistic, and behavioral levels. These
+      results
+  - text: Over four months, LLM users consistently underperformed at neural, linguistic,
+      and behavioral levels.
+    found: true
+    checked_against: page
+    passage: quote their own work. While LLMs offer immediate convenience, our findings
+      highlight potential cognitive costs. Over four months, LLM users consistently
+      underperformed at neural, linguistic, and behavioral levels. These results raise
+      concerns about the long-term educational implications of LLM reliance and underscore
+      the need for
+  - text: Self-reported ownership of essays was the lowest in the LLM group and the
+      highest in the Brain-only group.
+    found: true
+    checked_against: page
+    passage: exhibited higher memory recall and activation of occipito-parietal and
+      prefrontal areas, similar to Search Engine users. Self-reported ownership of
+      essays was the lowest in the LLM group and the highest in the Brain-only group.
+      LLM users also struggled to accurately quote their own work. While LLMs offer
+      immediate convenience, our findings
+  acquisition:
+    stage: research
+    origin: tavily
+    query: doctored documentation generative AI cognitive risks
+- id: 2026/20260417-ai-chatbots-could-be-making-you-stupider
+  url: https://www.bbc.com/future/article/20260417-ai-chatbots-could-be-making-you-stupider
+  title: AI Chatbots Could Be Making You Stupider
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: The brain didn't fall asleep, but there was much less activation in the
+      areas corresponding to creativity and to processing information,
+    found: true
+    checked_against: page
+    passage: ChatGPT group showed notably less brain activity - it was [reduced by
+      up to 55%](https://arxiv.org/abs/2506.08872). "The brain didn't fall asleep,
+      but there was much less activation in the areas corresponding to creativity
+      and to processing information," says Kosmyna. ChatGPT also affected people's
+      memories. After submitting their essays, people in the AI group were unable
+      to quote
+  - text: If that is a natural mode for people to interact with these systems – and
+      these are smart kids – that's bad.
+    found: true
+    checked_against: page
+    passage: '[to cognitive decline later in life](https://elifesciences.org/articles/61666).
+      "That''s really worrying," Ming says. "If that is a natural mode for people
+      to interact with these systems - and these are smart kids - that''s bad." Deep
+      thinking, she says, is our superpower. "If we don''t use it, the long-term implications
+      for cognitive health are'
+  - text: While studies such as these illustrate the short-term effects LLMs can have
+      on the brain, the long-term impacts are far less clear.
+    found: true
+    checked_against: page
+    passage: says. "One of the teachers asked if students were sitting next to each
+      other because the essays were so similar." While studies such as these illustrate
+      the short-term effects LLMs can have on the brain, the long-term impacts are
+      far less clear. The study by Kosmyna and her colleagues provides a glimpse.
+      Four months after the initial study they asked the students
+  acquisition:
+    stage: research
+    origin: tavily
+    query: studies cognitive decline generative AI users
+- id: 2026/978-981-95-6946-528
+  url: https://link.springer.com/chapter/10.1007/978-981-95-6946-5_28
+  title: 'The Impact of Generative AI on Learning: Discussion and Reflection Based
+    on the Multi-Store Model of Memory'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"Generative AI technology can not only improve learning efficiency but
+      also may lead to over-dependence, false confidence and negative learning attitude."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"The application of generative AI is gradually changing traditional cognitive
+      learning models."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Teachers should balance AI tools with cultivating students’ autonomous
+      learning abilities."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"The impact of generative AI on learning requires balancing knowledge acquisition
+      and critical thinking."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: study generative AI improves memory problem-solving
 audit:
   analyst_verdict: 'true'
-  auditor_verdict: mostly-true
-  analyst_confidence: medium
-  auditor_confidence: medium
-  verdict_agrees: false
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
   confidence_agrees: true
   needs_review: true
+  auditor_reasoning: Four independent research efforts (Stanford, MIT Media Lab, the
+    Polytechnique Insights article summarizing studies, and an Elsevier review) report
+    reduced cognitive engagement, lower memory recall, and diminished neural activity
+    when users rely on generative AI tools. The BBC Future piece also cites these
+    findings. Together they provide consistent evidence that generative AI use can
+    impair cognitive performance, supporting the claim that it can harm cognitive
+    ability.
+  evidence_gaps:
+  - The studies focus mainly on short‑term or specific tasks such as essay writing
+    or chat interaction; broader cognitive domains and long‑term effects are less
+    directly covered.
+  - Some sources are secondary summaries rather than original data, though they cite
+    primary research.
+  needs_review_reasons:
+  - 2+ evidence gaps
+  pipeline_verdict: 'true'
+  pipeline_confidence: high
+  rule_applied: agreed
 human_review:
-  reviewed_at: '2026-05-10'
+  reviewed_at: '2026-11-07'
   reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null
+  verdict_override: null
 analyst_record:
   title: Using generative AI can harm cognitive ability
-  seo_title: Generative AI can harm cognition
+  seo_title: Using generative AI harms cognition
   verdict: 'true'
-  takeaway: Independent studies document reduced mental effort and a ‘cognitive debt’
-    from AI‑assisted tasks, though other research shows memory benefits, highlighting
-    nuanced cognitive impacts.
+  takeaway: Evidence shows generative AI use can diminish mental effort and impair
+    memory and critical thinking.
   cap_rationale: null
+  uncited_by_title:
+  - 2026/s2451958826001764
+  - 2026/chatgpt-produces-more-lazy-thinkers-evidence-cognitive-engagement-decline
+  - 2025/your-brain-on-chatgpt

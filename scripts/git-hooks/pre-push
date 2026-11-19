@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Run the deploy's release tag check before main leaves this machine, so an
+# untagged push, or a site push over research changes, stops here instead of
+# failing in the deploy (docs/runbook.md § Releasing).
+# Install once per checkout: inv install-hooks
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+zero="0000000000000000000000000000000000000000"
+while read -r local_ref local_sha remote_ref _remote_sha; do
+  [ "$remote_ref" = "refs/heads/main" ] || continue
+  [ "$local_sha" != "$zero" ] || continue   # deleting the remote branch
+  # The check reads VERSION.md from the working tree, so it must describe the
+  # commit being pushed.
+  if [ "$local_sha" != "$(git rev-parse HEAD)" ]; then
+    echo "pre-push: pushing $local_ref (${local_sha:0:7}) to main, but HEAD is $(git rev-parse --short HEAD)." >&2
+    echo "pre-push: check out the commit you are releasing, then push again." >&2
+    exit 1
+  fi
+  echo "pre-push: running the release tag check for ${local_sha:0:7}..."
+  bash scripts/check-release-tag.sh "$local_sha"
+done
